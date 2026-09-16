@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="FOCS Utility v9.5.0 — a measured, reversible Windows gaming, network diagnostics, and app setup toolkit.">
+  <meta name="theme-color" content="#10091c">
+  <title>FOCS Utility — Measure first. Tune safely.</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09060f;
+      --panel: rgba(25, 15, 42, .76);
+      --panel-strong: #19102a;
+      --text: #f8f4ff;
+      --muted: #c4b7d8;
+      --line: rgba(210, 183, 255, .17);
+      --purple: #b785ff;
+      --violet: #7540d4;
+      --cyan: #71e5ff;
+      --green: #80f5b4;
+      --shadow: 0 30px 100px rgba(0,0,0,.44);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 82% 4%, rgba(117,64,212,.28), transparent 33rem),
+        radial-gradient(circle at 5% 35%, rgba(45,148,184,.12), transparent 28rem),
+        var(--bg);
+      line-height: 1.6;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .23;
+      background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, black, transparent 78%);
+    }
+    a { color: inherit; }
+    .shell { width: min(1120px, calc(100% - 40px)); margin: auto; }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 26px 0;
+      position: relative;
+      z-index: 2;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: .03em; text-decoration: none; }
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      background: linear-gradient(145deg, var(--purple), var(--violet));
+      box-shadow: 0 10px 30px rgba(117,64,212,.42);
+    }
+    .nav-links { display: flex; align-items: center; gap: 22px; color: var(--muted); font-size: .94rem; }
+    .nav-links a { text-decoration: none; }
+    .nav-links a:hover { color: white; }
+    .hero {
+      padding: 105px 0 92px;
+      display: grid;
+      grid-template-columns: 1.18fr .82fr;
+      gap: 68px;
+      align-items: center;
+    }
+    .eyebrow { color: var(--cyan); font-weight: 750; letter-spacing: .14em; text-transform: uppercase; font-size: .75rem; }
+    h1 { font-size: clamp(3.4rem, 7.4vw, 6.8rem); line-height: .93; letter-spacing: -.065em; margin: 20px 0 26px; max-width: 850px; }
+    h1 span { color: transparent; background: linear-gradient(100deg, #fff 14%, var(--purple) 62%, var(--cyan)); background-clip: text; }
+    .lead { max-width: 690px; color: var(--muted); font-size: clamp(1.05rem, 2vw, 1.23rem); }
+    .actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 0 22px;
+      border-radius: 13px;
+      border: 1px solid var(--line);
+      text-decoration: none;
+      font-weight: 750;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    }
+    .button:hover { transform: translateY(-2px); border-color: rgba(210,183,255,.46); }
+    .primary { background: linear-gradient(120deg, var(--violet), #965ff2); border-color: transparent; box-shadow: 0 16px 45px rgba(117,64,212,.32); }
+    .secondary { background: rgba(255,255,255,.035); color: #e6ddf4; }
+    .terminal {
+      position: relative;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(32,19,52,.94), rgba(12,8,20,.96));
+      box-shadow: var(--shadow);
+      transform: rotate(1.2deg);
+    }
+    .terminal::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: linear-gradient(135deg, rgba(183,133,255,.32), transparent 42%, rgba(113,229,255,.15)); z-index: -1; filter: blur(12px); }
+    .terminal-bar { display: flex; gap: 7px; padding: 3px 3px 16px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #5f536f; }
+    .dot:nth-child(1) { background: #ff7d99; } .dot:nth-child(2) { background: #ffd170; } .dot:nth-child(3) { background: #78e8ad; }
+    pre { margin: 0; padding: 24px; min-height: 300px; overflow: auto; border-radius: 15px; background: #08060d; color: #d9cbea; font: 500 .87rem/1.8 "Cascadia Code", Consolas, monospace; }
+    .prompt { color: var(--purple); } .ok { color: var(--green); } .info { color: var(--cyan); }
+    section { padding: 85px 0; }
+    .section-heading { display: grid; grid-template-columns: .75fr 1.25fr; gap: 60px; align-items: end; margin-bottom: 42px; }
+    h2 { margin: 0; font-size: clamp(2.1rem, 5vw, 4rem); line-height: 1; letter-spacing: -.05em; }
+    .section-heading p { margin: 0; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .card { padding: 27px; border-radius: 18px; border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(14px); }
+    .card-num { color: var(--purple); font: 700 .8rem/1 "Cascadia Code", monospace; }
+    .card h3 { margin: 34px 0 10px; font-size: 1.18rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+    .safety { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .safety .card { min-height: 230px; }
+    .tag { display: inline-flex; padding: 7px 10px; border-radius: 999px; color: var(--green); background: rgba(128,245,180,.08); border: 1px solid rgba(128,245,180,.18); font-size: .76rem; font-weight: 750; text-transform: uppercase; letter-spacing: .09em; }
+    .release { padding: 34px; display: flex; align-items: center; justify-content: space-between; gap: 28px; border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(120deg, rgba(117,64,212,.18), rgba(113,229,255,.06)); }
+    .release h3 { margin: 10px 0 4px; font-size: 1.55rem; }
+    .release p { margin: 0; color: var(--muted); }
+    footer { padding: 40px 0 54px; display: flex; justify-content: space-between; gap: 25px; border-top: 1px solid var(--line); color: #8f819f; font-size: .86rem; }
+    @media (max-width: 850px) {
+      .hero, .section-heading, .safety { grid-template-columns: 1fr; }
+      .hero { padding-top: 70px; }
+      .terminal { transform: none; }
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 26px, 1120px); }
+      .nav-links a:not(:last-child) { display: none; }
+      h1 { font-size: 3.25rem; }
+      .release, footer { align-items: flex-start; flex-direction: column; }
+      section { padding: 65px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav aria-label="Primary navigation">
+      <a class="brand" href="#top"><span class="mark">F</span> FOCS Utility</a>
+      <div class="nav-links"><a href="#features">Features</a><a href="#safety">Safety</a><a href="#download">Download</a></div>
+    </nav>
+
+    <main id="top">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Windows performance diagnostics · v9.5.0</div>
+          <h1>Measure first.<br><span>Tune safely.</span></h1>
+          <p class="lead">FOCS is a transparent Windows gaming, latency, and network toolkit built around measurable changes, automatic backups, and rollback paths—not mystery “optimization” presets.</p>
+          <div class="actions">
+            <a class="button primary" href="FOCS_Utility_v9_5_0_HARDENED.bat" download>Download hardened build</a>
+            <a class="button secondary" href="CHANGELOG.md">Read the change log</a>
+          </div>
+        </div>
+        <div class="terminal" aria-label="Example FOCS diagnostic output">
+          <div class="terminal-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <pre><span class="prompt">FOCS&gt;</span> loaded-latency --gaming
+
+Quiet P95          18.0 ms
+Download P95       27.0 ms
+Upload P95         31.0 ms
+Packet loss         0.0 %
+
+Gaming gate        <span class="ok">PASS</span>
+Backup             <span class="info">CREATED</span>
+Rollback path      <span class="ok">READY</span>
+
+<span class="prompt">FOCS&gt;</span> _</pre>
+        </div>
+      </div>
+
+      <section id="features">
+        <div class="section-heading">
+          <h2>Evidence over folklore.</h2>
+          <p>Benchmark the real machine, preserve the starting state, and keep a change only when the measurements support it.</p>
+        </div>
+        <div class="grid">
+          <article class="card"><span class="card-num">01 / NETWORK</span><h3>Tail-latency diagnostics</h3><p>Measures idle and loaded P95 latency, packet loss, jitter, gateway behavior, and NIC counters.</p></article>
+          <article class="card"><span class="card-num">02 / GRAPHICS</span><h3>Repeatable A/B benchmarks</h3><p>Uses multi-run PresentMon captures and noise-aware comparisons instead of trusting one lucky run.</p></article>
+          <article class="card"><span class="card-num">03 / SYSTEM</span><h3>Explicit Windows controls</h3><p>Registry, services, power, NVIDIA, AppX, and adapter changes remain visible and independently selectable.</p></article>
+          <article class="card"><span class="card-num">04 / APPS</span><h3>Reviewed app installation</h3><p>Install or update Chromium, Discord, Steam, Epic Games Launcher, and Logitech Onboard Memory Manager through exact WinGet package IDs.</p></article>
+        </div>
+      </section>
+
+      <section id="safety">
+        <div class="section-heading">
+          <h2>Built to back out.</h2>
+          <p>The hardened build improves recovery and supply-chain safeguards wherever elevated code or adapter state is involved.</p>
+        </div>
+        <div class="safety">
+          <article class="card"><span class="tag">Recovery</span><h3>Backups before mutation</h3><p>Registry, service, power, and NIC state are captured before relevant changes. Interrupted network tuning now triggers an emergency rollback to the original adapter snapshot.</p></article>
+          <article class="card"><span class="tag">Integrity</span><h3>Verified managed tools</h3><p>Downloads require HTTPS plus a publisher digest or trusted signature. Tool directories are replaced atomically, restoring the previous installation if deployment fails.</p></article>
+        </div>
+      </section>
+
+      <section id="download">
+        <div class="release">
+          <div><span class="tag">Current release</span><h3>FOCS Utility v9.5.0 Hardened</h3><p>Windows batch launcher with an embedded PowerShell GUI. Administrator access is required.</p></div>
+          <a class="button primary" href="FOCS_Utility_v9_5_0_HARDENED.bat" download>Download .bat</a>
+        </div>
+      </section>
+    </main>
+
+    <footer><span>FOCS Utility · Windows performance diagnostics</span><span>Review the source and create a restore point before tuning.</span></footer>
+  </div>
+</body>
+</html>
