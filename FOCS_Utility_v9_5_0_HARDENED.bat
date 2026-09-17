@@ -4324,7 +4324,7 @@ function Start-KxttsGui {
     $script:FocsToolTip.ShowAlways = $true
 
     $form = New-Object System.Windows.Forms.Form
-    $form.Text = 'FOCS Utility v9.5.0 - App Installer Build'
+    $form.Text = 'FOCS Utility v9.5.0 - UI Build 2026.09.17.5'
     $workArea = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
     $form.Size = New-Object System.Drawing.Size([Math]::Min(1540,$workArea.Width),[Math]::Min(980,$workArea.Height))
     $form.MinimumSize = New-Object System.Drawing.Size(1100,680)
@@ -4372,7 +4372,7 @@ public static class KxttsNativeWindow {
     $brandBadge=New-Object System.Windows.Forms.Panel;$brandBadge.Location=New-Object System.Drawing.Point(28,24);$brandBadge.Size=New-Object System.Drawing.Size(82,48);$brandBadge.BackColor=[System.Drawing.Color]::FromArgb(79,38,133);[void]$header.Controls.Add($brandBadge);Set-KRoundedRegion -Control $brandBadge -Radius 11;Add-KDarkBorder -Control $brandBadge -Radius 11 -Width 1
     $badgeText=New-KLabel $brandBadge 'FOCS' 0 0 82 48;$badgeText.TextAlign='MiddleCenter';$badgeText.Font=New-Object System.Drawing.Font('Segoe UI Semibold',13,[System.Drawing.FontStyle]::Bold);$badgeText.ForeColor=[System.Drawing.Color]::White
     [void](New-KTitle $header 'FOCS Utility v9.5.0' 128 18 500 45 24)
-    $sub=New-KLabel $header 'Gaming optimization, network tuning, debloat and diagnostics' 131 60 660 25;$sub.ForeColor=[System.Drawing.Color]::FromArgb(196,178,224)
+    $sub=New-KLabel $header 'Gaming optimization, network tuning, debloat and diagnostics  |  UI build 2026.09.17.5' 131 60 700 25;$sub.ForeColor=[System.Drawing.Color]::FromArgb(196,178,224)
     $tag=New-KLabel $header 'FPS   |   LATENCY   |   NETWORK   |   CLEAN WINDOWS' 850 52 500 26;$tag.Anchor='Top,Right';$tag.TextAlign='MiddleRight';$tag.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
 
     $minBtn=New-KButton '_' 1374 10 42 30; $minBtn.Anchor='Top,Right'; $minBtn.BackColor=[System.Drawing.Color]::FromArgb(14,7,25); $minBtn.FlatAppearance.BorderColor=[System.Drawing.Color]::Black; [void]$header.Controls.Add($minBtn)
@@ -4559,27 +4559,30 @@ public static class KxttsNativeWindow {
 
     # NETWORK
     $np=$pages.Network;[void](New-KTitle $np 'Network Lab' 12 6 500 36 16);[void](New-KLabel $np 'Easy mode shows the two useful actions: test first, then optionally run measured auto-tuning. Advanced tools stay one click away.' 12 43 840 40)
-    $ncard=New-KCard $np 10 95 860 1600
+    # Easy Mode is the constructor-time layout. This is intentional: WinForms
+    # DPI autoscaling can replay constructor bounds after pre-show resize code,
+    # which previously resurrected the narrow advanced-mode button geometry.
+    $ncard=New-KCard $np 10 95 860 620
     [void](New-KLabel $ncard 'Network adapter:' 18 25 110 25);$adapterCombo=New-Object System.Windows.Forms.ComboBox;$adapterCombo.DropDownStyle='DropDownList';$adapterCombo.Location=New-Object System.Drawing.Point(130,22);$adapterCombo.Size=New-Object System.Drawing.Size(365,28);[void]$ncard.Controls.Add($adapterCombo)
     foreach($a in Get-KPhysicalAdapters){[void]$adapterCombo.Items.Add($a.Name)};if($adapterCombo.Items.Count -gt 0){$adapterCombo.SelectedIndex=0}
     $refreshNic=New-KButton 'REFRESH ADAPTER' 515 18 145 36;[void]$ncard.Controls.Add($refreshNic);$advancedNetwork=New-KButton 'ADVANCED: OFF' 675 18 155 36;$advancedNetwork.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$ncard.Controls.Add($advancedNetwork)
     Set-FocsTip $adapterCombo 'FOCS selects the first active physical adapter automatically. Change it only if this is not the adapter used for gaming.';Set-FocsTip $refreshNic 'Reload the values exposed by the NIC driver.';Set-FocsTip $advancedNetwork 'Show loaded-latency, queue-control and manual driver experiments.'
 
-    $healthCard=New-KCard $ncard 18 75 812 215;[void](New-KTitle $healthCard '1. Test My Connection' 14 10 460 28 12)
+    $healthCard=New-KCard $ncard 18 75 812 165;[void](New-KTitle $healthCard '1. Test My Connection' 14 10 460 28 12)
     $healthDesc=New-KLabel $healthCard 'Start here. FOCS checks idle and busy-network gaming latency, packet loss and your router, then gives a plain PASS / WARN / FAIL result.' 14 42 775 42;$healthDesc.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
     $targetLabel=New-KLabel $healthCard 'Game/server target:' 14 92 125 25;$labTarget=New-Object System.Windows.Forms.TextBox;$labTarget.Text='';$labTarget.Location=New-Object System.Drawing.Point(140,89);$labTarget.Size=New-Object System.Drawing.Size(210,28);[void]$healthCard.Controls.Add($labTarget);$targetHint=New-KLabel $healthCard 'Optional IP/hostname' 360 92 150 25;$targetHint.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
     $uploadLabel=New-KLabel $healthCard 'Upload Mbps:' 520 92 90 25;$bbUpload=New-Object System.Windows.Forms.NumericUpDown;$bbUpload.DecimalPlaces=1;$bbUpload.Minimum=2;$bbUpload.Maximum=10000;$bbUpload.Increment=1;$bbUpload.Value=$bbUpload.Minimum;$bbUpload.Location=New-Object System.Drawing.Point(610,89);$bbUpload.Size=New-Object System.Drawing.Size(105,28);[void]$healthCard.Controls.Add($bbUpload)
-    $gamingTest=New-KButton 'START QUICK CHECK' 14 140 205 42;$gamingTest.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$healthCard.Controls.Add($gamingTest)
+    $gamingTest=New-KButton 'START QUICK CHECK' 14 100 784 44;$gamingTest.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$healthCard.Controls.Add($gamingTest)
     $bufferTest=New-KButton 'FULL LOADED LATENCY' 230 140 200 42;[void]$healthCard.Controls.Add($bufferTest)
     $gatewayTest=New-KButton 'GATEWAY PING' 441 140 150 42;[void]$healthCard.Controls.Add($gatewayTest)
     $netHost=New-Object System.Windows.Forms.TextBox;$netHost.Text='1.1.1.1';$netHost.Location=New-Object System.Drawing.Point(602,145);$netHost.Size=New-Object System.Drawing.Size(105,28);[void]$healthCard.Controls.Add($netHost);$netTest=New-KButton 'PING' 716 140 72 38;[void]$healthCard.Controls.Add($netTest)
     Set-FocsTip $gamingTest 'Measures idle, download-loaded and upload-loaded P95 plus the gateway. PASS requires every measured gaming path to stay below 40 ms.';Set-FocsTip $bufferTest 'Detailed bufferbloat test. Shows both added latency and absolute P95 so a good average cannot hide gaming spikes.';Set-FocsTip $labTarget 'Optional game/server IP or hostname. A bad custom target with clean public paths usually points to routing/peering rather than NIC tuning.';Set-FocsTip $bbUpload 'Enter a recent real upload speed. It is used only to verify that upload-load tests actually stress the line.'
 
-    $autoCard=New-KCard $ncard 18 305 812 205;[void](New-KTitle $autoCard '2. Improve It Automatically (optional)' 14 10 500 28 12)
+    $autoCard=New-KCard $ncard 18 255 812 175;[void](New-KTitle $autoCard '2. Improve It Automatically (optional)' 14 10 500 28 12)
     $autoDesc=New-KLabel $autoCard 'FOCS measures every change and keeps only a result that improves gaming latency without adding loss or NIC errors. You can undo it at any time.' 14 43 775 42;$autoDesc.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
     $depthLabel=New-KLabel $autoCard 'Depth:' 14 97 55 25;$labDepth=New-Object System.Windows.Forms.ComboBox;$labDepth.DropDownStyle='DropDownList';foreach($d in @('Quick','Balanced','Deep')){[void]$labDepth.Items.Add($d)};$labDepth.SelectedIndex=1;$labDepth.Location=New-Object System.Drawing.Point(70,94);$labDepth.Size=New-Object System.Drawing.Size(135,28);[void]$autoCard.Controls.Add($labDepth)
-    $autoTune=New-KButton 'MEASURED AUTO-TUNE' 220 88 190 40;$autoTune.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$autoCard.Controls.Add($autoTune);$stabilityTune=New-KButton 'STABILITY FIRST' 420 88 155 40;$stabilityTune.BackColor=[System.Drawing.Color]::FromArgb(76,38,132);[void]$autoCard.Controls.Add($stabilityTune);$applyBest=New-KButton 'APPLY SAVED BEST' 585 88 200 40;$applyBest.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$autoCard.Controls.Add($applyBest)
-    $easyUndo=New-KButton 'UNDO FOCS NETWORK CHANGES' 390 88 395 44;$easyUndo.BackColor=[System.Drawing.Color]::FromArgb(90,40,40);[void]$autoCard.Controls.Add($easyUndo)
+    $autoTune=New-KButton 'MEASURED AUTO-TUNE' 14 100 384 44;$autoTune.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$autoCard.Controls.Add($autoTune);$stabilityTune=New-KButton 'STABILITY FIRST' 420 88 155 40;$stabilityTune.BackColor=[System.Drawing.Color]::FromArgb(76,38,132);[void]$autoCard.Controls.Add($stabilityTune);$applyBest=New-KButton 'APPLY SAVED BEST' 585 88 200 40;$applyBest.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$autoCard.Controls.Add($applyBest)
+    $easyUndo=New-KButton 'UNDO FOCS NETWORK CHANGES' 414 100 384 44;$easyUndo.BackColor=[System.Drawing.Color]::FromArgb(90,40,40);[void]$autoCard.Controls.Add($easyUndo)
     $factoryNic=New-KButton 'DRIVER DEFAULTS' 14 145 170 38;[void]$autoCard.Controls.Add($factoryNic);$restoreNic=New-KButton 'RESTORE BACKUP' 194 145 170 38;[void]$autoCard.Controls.Add($restoreNic)
     $autoNote=New-KLabel $autoCard 'Packet loss and NIC errors remain hard vetoes. Tail latency now outranks tiny average-ping wins.' 385 151 400 30;$autoNote.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
     Set-FocsTip $labDepth 'Balanced or Deep is preferred for network tuning because P95 is noisy on very short tests.';Set-FocsTip $autoTune 'Restarts the adapter while testing. It will not keep a setting that meaningfully worsens gaming P95, loss or NIC error counters.';Set-FocsTip $applyBest 'Reapply the last measured profile for this exact adapter.'
@@ -4604,7 +4607,7 @@ public static class KxttsNativeWindow {
     $rssCard=New-KCard $ncard 422 1230 390 108;$rssTitle=New-KLabel $rssCard 'RSS: kept enabled' 14 10 350 30;$rssTitle.Font=New-Object System.Drawing.Font('Segoe UI Semibold',10);$rssTitle.ForeColor=[System.Drawing.Color]::FromArgb(244,238,255);$rssDesc=New-KLabel $rssCard 'RSS spreads receive processing across CPU cores and remains the normal multi-core baseline.' 14 43 355 52;$rssDesc.ForeColor=[System.Drawing.Color]::FromArgb(205,188,230)
     Set-FocsTip $imCard 'A/B test interrupt moderation with Gaming Health; do not assume Off is better.';Set-FocsTip $eeeCard 'Power-saving link states can add variability on some adapters.';Set-FocsTip $flowCard 'Flow Control is congestion-dependent; disable only as an experiment.';Set-FocsTip $lsoCard 'Offload changes affect CPU and batching. Measure P95 and frametimes.';Set-FocsTip $rscCard 'RSC can change receive batching. P95 regression is a reject.';Set-FocsTip $rssCard 'FOCS keeps RSS as the default baseline on multi-core systems.'
     $applyLatencyNic=New-KButton 'APPLY CHECKED EXPERIMENTS' 18 1352 280 40;$applyLatencyNic.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$ncard.Controls.Add($applyLatencyNic);Set-FocsTip $applyLatencyNic 'Backs up the adapter and applies only the checked experiments.'
-    $netResult=New-Object System.Windows.Forms.TextBox;$netResult.Multiline=$true;$netResult.ReadOnly=$true;$netResult.ScrollBars='Vertical';$netResult.Location=New-Object System.Drawing.Point(18,1407);$netResult.Size=New-Object System.Drawing.Size(812,150);$netResult.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$netResult.BorderStyle=[System.Windows.Forms.BorderStyle]::FixedSingle;$netResult.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236);[void]$ncard.Controls.Add($netResult);Set-FocsTip $netResult 'Live results. Focus on loss and absolute P95; average ping alone is not the gaming verdict.'
+    $netResult=New-Object System.Windows.Forms.TextBox;$netResult.Multiline=$true;$netResult.ReadOnly=$true;$netResult.ScrollBars='Vertical';$netResult.Location=New-Object System.Drawing.Point(18,445);$netResult.Size=New-Object System.Drawing.Size(812,150);$netResult.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$netResult.BorderStyle=[System.Windows.Forms.BorderStyle]::FixedSingle;$netResult.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236);[void]$ncard.Controls.Add($netResult);Set-FocsTip $netResult 'Live results. Focus on loss and absolute P95; average ping alone is not the gaming verdict.'
     $script:NetworkAdvancedMode=$false
     $setNetworkMode={
         param([bool]$Advanced)
@@ -4773,7 +4776,6 @@ FOCS v9.5.0 design rules
     }.GetNewClosure()
     $form.Add_Resize({& $updateShellLayout}.GetNewClosure())
     $form.Add_Shown({& $updateShellLayout}.GetNewClosure())
-    $form.Add_Shown({& $setNetworkMode $script:NetworkAdvancedMode}.GetNewClosure())
     & $updateShellLayout
 
     function Show-KPage([string]$Name,[System.Windows.Forms.Button]$Nav){foreach($p in $pages.Values){$p.Visible=$false};$pages[$Name].Visible=$true;$pages[$Name].BringToFront();Set-KNavSelected -Buttons $navButtons -Selected $Nav}
