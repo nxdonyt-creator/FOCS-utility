@@ -287,6 +287,81 @@ function Set-RegString {
     New-ItemProperty -Path $Path -Name $Name -PropertyType String -Value $Value -Force | Out-Null
 }
 
+function Invoke-FocsThemeRefresh {
+    try {
+        if (-not ('FocsThemeBroadcast' -as [type])) {
+            Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class FocsThemeBroadcast {
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr SendMessageTimeout(
+        IntPtr hWnd, uint Msg, UIntPtr wParam, string lParam,
+        uint flags, uint timeout, out UIntPtr result);
+    public static void Refresh() {
+        UIntPtr result;
+        SendMessageTimeout(new IntPtr(0xffff), 0x001A, UIntPtr.Zero,
+            "ImmersiveColorSet", 0x0002, 1000, out result);
+    }
+}
+'@
+        }
+        [FocsThemeBroadcast]::Refresh()
+    } catch { Write-KLog "Theme refresh broadcast failed: $($_.Exception.Message)" }
+    try {
+        Start-Process -FilePath (Join-Path $env:SystemRoot 'System32\rundll32.exe') -ArgumentList 'user32.dll,UpdatePerUserSystemParameters' -WindowStyle Hidden | Out-Null
+    } catch { Write-KLog "Per-user appearance refresh failed: $($_.Exception.Message)" }
+}
+
+function Apply-FocsThemeMode {
+    param([ValidateSet('Light','Dark','Custom')][string]$Mode)
+    $path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+    $backup = New-KBackup
+    Save-RegValueJournal -Folder $backup -Targets @(
+        [pscustomobject]@{Path=$path;Name='AppsUseLightTheme'},
+        [pscustomobject]@{Path=$path;Name='SystemUsesLightTheme'}
+    )
+    switch ($Mode) {
+        'Light'  { $apps=1; $system=1; $description='Light apps + light Windows surfaces' }
+        'Dark'   { $apps=0; $system=0; $description='Dark apps + dark Windows surfaces' }
+        'Custom' { $apps=1; $system=0; $description='Light apps + dark Start/taskbar' }
+    }
+    Set-RegDword $path 'AppsUseLightTheme' ([uint32]$apps)
+    Set-RegDword $path 'SystemUsesLightTheme' ([uint32]$system)
+    Invoke-FocsThemeRefresh
+    Write-KLog "Appearance theme applied: $Mode | Backup=$backup"
+    return "$description applied.`r`n`r`nBackup: $backup"
+}
+
+function Apply-FocsAccentColor {
+    param([Parameter(Mandatory=$true)][System.Drawing.Color]$Color)
+    $dwm = 'HKCU:\Software\Microsoft\Windows\DWM'
+    $personalize = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+    $backup = New-KBackup
+    Save-RegValueJournal -Folder $backup -Targets @(
+        [pscustomobject]@{Path=$dwm;Name='AccentColor'},
+        [pscustomobject]@{Path=$dwm;Name='ColorizationColor'},
+        [pscustomobject]@{Path=$dwm;Name='ColorPrevalence'},
+        [pscustomobject]@{Path=$personalize;Name='ColorPrevalence'}
+    )
+    # DWM stores the colour as an opaque ABGR DWORD rather than the usual RGB order.
+    $abgr = [uint32](4278190080L + ([int64]$Color.B * 65536L) + ([int64]$Color.G * 256L) + [int64]$Color.R)
+    Set-RegDword $dwm 'AccentColor' $abgr
+    Set-RegDword $dwm 'ColorizationColor' $abgr
+    Set-RegDword $dwm 'ColorPrevalence' 1
+    Set-RegDword $personalize 'ColorPrevalence' 1
+    Invoke-FocsThemeRefresh
+    $hex = '#{0:X2}{1:X2}{2:X2}' -f $Color.R,$Color.G,$Color.B
+    Write-KLog "Start/taskbar accent applied: $hex | Backup=$backup"
+    return "Accent $hex applied to supported Windows surfaces.`r`n`r`nFor the taskbar, use Dark or Custom mode. Some apps update after reopening.`r`n`r`nBackup: $backup"
+}
+
+function Open-FocsSettingsPage {
+    param([Parameter(Mandatory=$true)][string]$Uri)
+    if ($Uri -notmatch '^ms-settings:[a-z0-9-]+$') { throw 'FOCS blocked an invalid Settings page URI.' }
+    Start-Process $Uri
+}
+
 function Get-RegValueSnapshot {
     param([string]$Path,[string]$Name)
     $exists = $false
@@ -430,7 +505,7 @@ Read-Host 'Press Enter to close'
 }
 
 function New-KBackup {
-    $folder = Join-Path $script:BackupRoot ("Backup_{0}" -f (Get-Date -Format 'yyyyMMdd_HHmmss'))
+    $folder = Join-Path $script:BackupRoot ("Backup_{0}" -f (Get-Date -Format 'yyyyMMdd_HHmmss_fff'))
     New-Item -ItemType Directory -Path $folder -Force | Out-Null
 
     $keys = @(
@@ -438,6 +513,7 @@ function New-KBackup {
         'HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR',
         'HKCU\System\GameConfigStore',
         'HKCU\Control Panel\Mouse',
+        'HKCU\Software\Microsoft\Windows\DWM',
         'HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager',
         'HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo',
         'HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy',
@@ -1238,11 +1314,30 @@ function Invoke-WingetInstallOrUpgrade {
     param([Parameter(Mandatory=$true)][string]$PackageId)
     $winget = Get-KWinget
     if (-not $winget) { throw 'winget is not available.' }
-    $verb = if (Get-WingetInstalledVersion -PackageId $PackageId) { 'upgrade' } else { 'install' }
+    $installedBefore = Get-WingetInstalledVersion -PackageId $PackageId
+    $verb = if ($installedBefore) { 'upgrade' } else { 'install' }
+    if ($installedBefore) {
+        $availableBefore = Get-WingetPackageVersion -PackageId $PackageId
+        if ($availableBefore -and (Test-KVersionEquivalent $installedBefore $availableBefore)) {
+            Write-KLog "winget: $PackageId is already current at $installedBefore; verifying launch files."
+            return
+        }
+    }
     Write-KLog "winget: $verb $PackageId"
     $wingetArgs = @($verb,'--id',$PackageId,'--exact','--source','winget','--silent','--accept-source-agreements','--accept-package-agreements','--disable-interactivity')
     $p = Start-Process -FilePath $winget -ArgumentList $wingetArgs -PassThru -Wait -WindowStyle Hidden
-    if ($p.ExitCode -ne 0) { throw "winget returned exit code $($p.ExitCode) for $PackageId." }
+    if ($p.ExitCode -ne 0) {
+        $installedAfter = Get-WingetInstalledVersion -PackageId $PackageId
+        $availableAfter = if ($installedAfter) { Get-WingetPackageVersion -PackageId $PackageId } else { $null }
+        # 0x8A15002B is WinGet's no-available-upgrade result. Re-querying both
+        # versions avoids treating an installed, current application as a failure.
+        if ($verb -eq 'upgrade' -and $installedAfter -and
+            ($p.ExitCode -eq -1978335189 -or ($availableAfter -and (Test-KVersionEquivalent $installedAfter $availableAfter)))) {
+            Write-KLog "winget: $PackageId is already current at $installedAfter (exit code $($p.ExitCode)); verifying launch files."
+            return
+        }
+        throw "winget returned exit code $($p.ExitCode) for $PackageId."
+    }
 }
 
 function Get-FocsAppCatalog {
@@ -4230,14 +4325,17 @@ function Start-KxttsGui {
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = 'FOCS Utility v9.5.0 - App Installer Build'
-    $form.Size = New-Object System.Drawing.Size(1540,980)
-    $form.MinimumSize = New-Object System.Drawing.Size(1320,850)
+    $workArea = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+    $form.Size = New-Object System.Drawing.Size([Math]::Min(1540,$workArea.Width),[Math]::Min(980,$workArea.Height))
+    $form.MinimumSize = New-Object System.Drawing.Size(1100,680)
+    $form.MaximizedBounds = $workArea
     $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
     $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
     $form.BackColor = [System.Drawing.Color]::FromArgb(10,5,18)
     $form.ForeColor = [System.Drawing.Color]::White
     $form.Font = New-Object System.Drawing.Font('Segoe UI',10)
     $form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Dpi
+    $form.WindowState = [System.Windows.Forms.FormWindowState]::Maximized
     $script:Ui.Form=$form
     Set-KRoundedRegion -Control $form -Radius 18
     Add-KDarkBorder -Control $form -Radius 18 -Width 3
@@ -4275,7 +4373,7 @@ public static class KxttsNativeWindow {
     $dragWindow={param($sender,$e) if($e.Button -eq [System.Windows.Forms.MouseButtons]::Left){[void][KxttsNativeWindow]::ReleaseCapture();[void][KxttsNativeWindow]::SendMessage($form.Handle,0xA1,[IntPtr]2,[IntPtr]::Zero)}}
     $header.Add_MouseDown($dragWindow); $brand=$header.Controls | Where-Object {$_.Text -eq 'FOCS Utility'} | Select-Object -First 1; if($brand){$brand.Add_MouseDown($dragWindow)}
 
-    $side=New-Object System.Windows.Forms.Panel;$side.Location=New-Object System.Drawing.Point(0,100);$side.Size=New-Object System.Drawing.Size(275,830);$side.Anchor='Top,Bottom,Left';$side.BackColor=[System.Drawing.Color]::FromArgb(16,8,28);[void]$form.Controls.Add($side)
+    $side=New-Object System.Windows.Forms.Panel;$side.Location=New-Object System.Drawing.Point(0,100);$side.Size=New-Object System.Drawing.Size(275,830);$side.Anchor='Top,Bottom,Left';$side.AutoScroll=$true;$side.AutoScrollMinSize=New-Object System.Drawing.Size(0,820);$side.BackColor=[System.Drawing.Color]::FromArgb(16,8,28);[void]$form.Controls.Add($side)
     Set-KRoundedRegion -Control $side -Radius 16
     $side.Add_Resize({ param($sender,$e) try { Set-KRoundedRegion -Control $sender -Radius 16 } catch {} })
     $navHome=New-KNavButton $side 'HOME' 18
@@ -4304,13 +4402,13 @@ public static class KxttsNativeWindow {
     Set-FocsTip $navBench 'Multi-run PresentMon benchmark sets with noise-aware comparison and optional hardware telemetry.'
     Set-FocsTip $navAbout 'Shows what FOCS changes, what it avoids, and why.'
 
-    $sysCard=New-KCard $side 14 650 238 150;$sysCard.Anchor='Left,Bottom';[void](New-KTitle $sysCard 'Your System' 14 10 205 30 11)
+    $sysCard=New-KCard $side 14 650 238 150;[void](New-KTitle $sysCard 'Your System' 14 10 205 30 11)
     $sysInfo=New-KLabel $sysCard ("Windows: $($system.OS)`r`nCPU: $($system.CPU)`r`nGPU: $($system.GPU)`r`nRAM: $($system.RAM) GB") 14 43 208 96;$sysInfo.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
 
     $contentHost=New-Object System.Windows.Forms.Panel;$contentHost.Location=New-Object System.Drawing.Point(288,112);$contentHost.Size=New-Object System.Drawing.Size(890,795);$contentHost.Anchor='Top,Bottom,Left,Right';$contentHost.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);[void]$form.Controls.Add($contentHost)
     Set-KRoundedRegion -Control $contentHost -Radius 16
     $contentHost.Add_Resize({ param($sender,$e) try { Set-KRoundedRegion -Control $sender -Radius 16 } catch {} })
-    $right=New-Object System.Windows.Forms.Panel;$right.Location=New-Object System.Drawing.Point(1190,112);$right.Size=New-Object System.Drawing.Size(320,795);$right.Anchor='Top,Bottom,Right';$right.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);[void]$form.Controls.Add($right)
+    $right=New-Object System.Windows.Forms.Panel;$right.Location=New-Object System.Drawing.Point(1190,112);$right.Size=New-Object System.Drawing.Size(320,795);$right.Anchor='Top,Bottom,Right';$right.AutoScroll=$true;$right.AutoScrollMinSize=New-Object System.Drawing.Size(0,790);$right.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);[void]$form.Controls.Add($right)
     Set-KRoundedRegion -Control $right -Radius 16
     $right.Add_Resize({ param($sender,$e) try { Set-KRoundedRegion -Control $sender -Radius 16 } catch {} })
 
@@ -4352,6 +4450,31 @@ public static class KxttsNativeWindow {
     $infoCard=New-KCard $tw 10 435 860 225;[void](New-KTitle $infoCard 'What is deliberately not automatic' 14 10 500 28 12)
     $tinfo=New-KLabel $infoCard "FOCS does not disable Defender/VBS/firewall, force HPET, set Realtime priority, blanket-force MSI mode, or apply every NIC offload hack. Those changes are either security-sensitive, hardware-specific, or commonly regress performance. Use the NVIDIA, Network and Registry pages for targeted changes and benchmark them." 18 50 815 145;$tinfo.ForeColor=[System.Drawing.Color]::FromArgb(220,204,240)
 
+    $appearanceCard=New-KCard $tw 10 675 860 285;[void](New-KTitle $appearanceCard 'Appearance: Start, taskbar and app theme' 14 10 600 30 12)
+    $appearanceNote=New-KLabel $appearanceCard 'Choose an accent, then apply it to supported Windows surfaces. Taskbar colour is shown by Windows when Dark or Custom mode is selected.' 18 45 810 42;$appearanceNote.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
+    $script:SelectedAccentColor=[System.Drawing.Color]::FromArgb(104,56,184)
+    $accentPreview=New-Object System.Windows.Forms.Panel;$accentPreview.Location=New-Object System.Drawing.Point(18,100);$accentPreview.Size=New-Object System.Drawing.Size(52,44);$accentPreview.BackColor=$script:SelectedAccentColor;[void]$appearanceCard.Controls.Add($accentPreview);Set-KRoundedRegion -Control $accentPreview -Radius 8;Add-KDarkBorder -Control $accentPreview -Radius 8 -Width 1
+    $accentLabel=New-KLabel $appearanceCard 'Selected accent: #6838B8' 82 109 230 28;$accentLabel.ForeColor=[System.Drawing.Color]::FromArgb(222,207,243)
+    $chooseAccent=New-KButton 'CHOOSE ACCENT COLOUR' 325 98 235 46;[void]$appearanceCard.Controls.Add($chooseAccent)
+    $applyAccent=New-KButton 'APPLY TO START + TASKBAR' 575 98 255 46;$applyAccent.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$appearanceCard.Controls.Add($applyAccent)
+    [void](New-KLabel $appearanceCard 'Theme:' 18 174 60 26);$themeMode=New-Object System.Windows.Forms.ComboBox;$themeMode.DropDownStyle='DropDownList';foreach($mode in @('Light','Dark','Custom - dark taskbar + light apps')){[void]$themeMode.Items.Add($mode)};$themeMode.SelectedIndex=2;$themeMode.Location=New-Object System.Drawing.Point(82,170);$themeMode.Size=New-Object System.Drawing.Size(300,30);[void]$appearanceCard.Controls.Add($themeMode)
+    $applyTheme=New-KButton 'APPLY THEME' 400 166 190 40;$applyTheme.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$appearanceCard.Controls.Add($applyTheme)
+    $openColorSettings=New-KButton 'OPEN WINDOWS COLOUR SETTINGS' 605 166 225 40;[void]$appearanceCard.Controls.Add($openColorSettings)
+    $appearanceRestore=New-KLabel $appearanceCard 'Every direct appearance change creates a Desktop\FOCS_Backups restore point first.' 18 228 810 30;$appearanceRestore.ForeColor=[System.Drawing.Color]::FromArgb(111,235,185)
+
+    $accessCard=New-KCard $tw 10 975 860 335;[void](New-KTitle $accessCard 'Accessibility shortcuts' 14 10 600 30 12)
+    $accessNote=New-KLabel $accessCard 'Open the exact Windows accessibility page you need. Windows keeps the preview and confirmation controls, so nothing is enabled by accident.' 18 43 810 42;$accessNote.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
+    $accessHome=New-KButton 'ACCESSIBILITY HOME' 18 95 392 38;[void]$accessCard.Controls.Add($accessHome)
+    $accessText=New-KButton 'TEXT SIZE + DISPLAY' 430 95 392 38;[void]$accessCard.Controls.Add($accessText)
+    $accessContrast=New-KButton 'CONTRAST THEMES' 18 143 392 38;[void]$accessCard.Controls.Add($accessContrast)
+    $accessFilters=New-KButton 'COLOUR FILTERS' 430 143 392 38;[void]$accessCard.Controls.Add($accessFilters)
+    $accessPointer=New-KButton 'MOUSE POINTER' 18 191 392 38;[void]$accessCard.Controls.Add($accessPointer)
+    $accessCursor=New-KButton 'TEXT CURSOR' 430 191 392 38;[void]$accessCard.Controls.Add($accessCursor)
+    $accessMagnifier=New-KButton 'MAGNIFIER' 18 239 392 38;[void]$accessCard.Controls.Add($accessMagnifier)
+    $accessCaptions=New-KButton 'CLOSED CAPTIONS' 430 239 392 38;[void]$accessCard.Controls.Add($accessCaptions)
+    $accessNarrator=New-KButton 'NARRATOR' 18 287 392 38;[void]$accessCard.Controls.Add($accessNarrator)
+    $accessKeyboard=New-KButton 'KEYBOARD ACCESSIBILITY' 430 287 392 38;[void]$accessCard.Controls.Add($accessKeyboard)
+
     # HOME + robust profile event wiring through sender.Tag and script-scoped UI state.
     $homePage=$pages.Home;[void](New-KTitle $homePage 'Select a Tweak Profile' 12 6 500 38 16);[void](New-KLabel $homePage 'Profiles now change the actual tweak controls immediately.' 12 42 760 25)
     $profilePanel=New-Object System.Windows.Forms.Panel;$profilePanel.Location=New-Object System.Drawing.Point(10,78);$profilePanel.Size=New-Object System.Drawing.Size(860,155);$profilePanel.BackColor=$homePage.BackColor;[void]$homePage.Controls.Add($profilePanel)
@@ -4385,16 +4508,16 @@ public static class KxttsNativeWindow {
 
     # APP INSTALLER
     $ip=$pages.Installer;[void](New-KTitle $ip 'Useful App Installer' 12 6 500 36 16);[void](New-KLabel $ip 'Install or update trusted catalog entries through exact WinGet package IDs. Review the selection before continuing.' 12 43 840 40)
-    $icard=New-KCard $ip 10 95 860 560
-    $appList=New-Object System.Windows.Forms.CheckedListBox;$appList.Location=New-Object System.Drawing.Point(18,20);$appList.Size=New-Object System.Drawing.Size(480,290);$appList.CheckOnClick=$true;$appList.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$appList.ForeColor=[System.Drawing.Color]::FromArgb(225,210,245);[void]$icard.Controls.Add($appList)
+    $icard=New-KCard $ip 10 95 860 650
+    $appList=New-Object System.Windows.Forms.CheckedListBox;$appList.Location=New-Object System.Drawing.Point(18,20);$appList.Size=New-Object System.Drawing.Size(802,180);$appList.CheckOnClick=$true;$appList.HorizontalScrollbar=$true;$appList.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$appList.ForeColor=[System.Drawing.Color]::FromArgb(225,210,245);[void]$icard.Controls.Add($appList)
     $script:Ui.AppCatalog=@(Get-FocsAppCatalog)
     foreach($app in $script:Ui.AppCatalog){[void]$appList.Items.Add(("{0}  [{1}]" -f $app.Name,$app.PackageId),$false)}
-    $appSelectAll=New-KButton 'SELECT ALL' 520 20 300 38;[void]$icard.Controls.Add($appSelectAll)
-    $appClear=New-KButton 'CLEAR' 520 68 300 38;[void]$icard.Controls.Add($appClear)
-    $appRefresh=New-KButton 'REFRESH STATUS' 520 116 300 38;[void]$icard.Controls.Add($appRefresh)
-    $appInstall=New-KButton 'INSTALL / UPDATE SELECTED' 520 164 300 44;$appInstall.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$icard.Controls.Add($appInstall)
-    $appNote=New-KLabel $icard "Uses WinGet's community manifests and publisher-hosted installers. FOCS passes --exact, --silent, and non-interactive agreement flags. Chromium is the Hibbiki Chromium build; this is Chromium, not Google Chrome.`r`n`r`nThe installer continues to the next selected app if one package fails." 520 230 300 120;$appNote.ForeColor=[System.Drawing.Color]::FromArgb(237,194,120)
-    $appOut=New-Object System.Windows.Forms.TextBox;$appOut.Multiline=$true;$appOut.ReadOnly=$true;$appOut.ScrollBars='Vertical';$appOut.Location=New-Object System.Drawing.Point(18,330);$appOut.Size=New-Object System.Drawing.Size(802,200);$appOut.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$appOut.BorderStyle=[System.Windows.Forms.BorderStyle]::FixedSingle;$appOut.ForeColor=[System.Drawing.Color]::FromArgb(203,185,226);$appOut.Text='Click REFRESH STATUS to query WinGet.';[void]$icard.Controls.Add($appOut)
+    $appSelectAll=New-KButton 'SELECT ALL' 18 215 190 40;[void]$icard.Controls.Add($appSelectAll)
+    $appClear=New-KButton 'CLEAR' 222 215 190 40;[void]$icard.Controls.Add($appClear)
+    $appRefresh=New-KButton 'REFRESH STATUS' 426 215 190 40;[void]$icard.Controls.Add($appRefresh)
+    $appInstall=New-KButton 'INSTALL / UPDATE' 630 215 190 40;$appInstall.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$icard.Controls.Add($appInstall)
+    $appNote=New-KLabel $icard "Uses exact WinGet package IDs, silent publisher installers and non-interactive agreement flags. Chromium is the Hibbiki community build, not Google Chrome. Every completed package is checked for a real executable and a working Start Menu launch entry; one failure does not stop the remaining selections." 18 275 802 72;$appNote.ForeColor=[System.Drawing.Color]::FromArgb(237,194,120)
+    $appOut=New-Object System.Windows.Forms.TextBox;$appOut.Multiline=$true;$appOut.ReadOnly=$true;$appOut.ScrollBars='Both';$appOut.WordWrap=$false;$appOut.Font=New-Object System.Drawing.Font('Consolas',9);$appOut.Location=New-Object System.Drawing.Point(18,365);$appOut.Size=New-Object System.Drawing.Size(802,250);$appOut.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$appOut.BorderStyle=[System.Windows.Forms.BorderStyle]::FixedSingle;$appOut.ForeColor=[System.Drawing.Color]::FromArgb(203,185,226);$appOut.Text='Click REFRESH STATUS to query WinGet.';[void]$icard.Controls.Add($appOut)
     Set-FocsTip $appList 'Select one or more exact packages. Package IDs are fixed in the FOCS catalog and cannot be typed or injected.'
     Set-FocsTip $appRefresh 'Queries WinGet for installed and currently available versions without changing the system.'
     Set-FocsTip $appInstall 'Shows a final package list, then installs or upgrades each selected application through WinGet.'
@@ -4583,6 +4706,20 @@ FOCS v9.5.0 design rules
     $powerTuneBtn.Add_Click({try{$ans=[System.Windows.Forms.MessageBox]::Show("FOCS will benchmark several Windows power plans on this PC, briefly switch between them, and keep the lowest measured CPU-burst + wake-latency result. This does not overclock the CPU. Close games/downloads for a cleaner result. Continue?",'FOCS Power Plan Lab',[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Information);if($ans -ne [System.Windows.Forms.DialogResult]::Yes){return};$form.UseWaitCursor=$true;$msg=Invoke-FocsPowerPlanLab -PowerLabel $powerText;Show-KMessage $msg 'FOCS Power Plan Lab'}catch{Show-KMessage $_.Exception.Message 'Power Plan Lab error' ([System.Windows.Forms.MessageBoxIcon]::Error)}finally{$form.UseWaitCursor=$false}})
 
     $applySelected.Add_Click({try{Apply-SafeTweaks -Controls $controls;if($controls.Hags.Checked){Apply-HagsChoice -Choice 'Enable HAGS'}}catch{Show-KMessage $_.Exception.Message 'Windows baseline error' ([System.Windows.Forms.MessageBoxIcon]::Error)}})
+    $chooseAccent.Add_Click({try{$dialog=New-Object System.Windows.Forms.ColorDialog;$dialog.FullOpen=$true;$dialog.Color=$script:SelectedAccentColor;if($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){$script:SelectedAccentColor=$dialog.Color;$accentPreview.BackColor=$dialog.Color;$accentLabel.Text=('#{0:X2}{1:X2}{2:X2}' -f $dialog.Color.R,$dialog.Color.G,$dialog.Color.B);$accentLabel.Text='Selected accent: '+$accentLabel.Text}}catch{Show-KMessage $_.Exception.Message 'Accent colour error' ([System.Windows.Forms.MessageBoxIcon]::Error)}})
+    $applyAccent.Add_Click({try{Show-KMessage (Apply-FocsAccentColor -Color $script:SelectedAccentColor) 'Start + taskbar accent'}catch{Show-KMessage $_.Exception.Message 'Accent colour error' ([System.Windows.Forms.MessageBoxIcon]::Error)}})
+    $applyTheme.Add_Click({try{$mode=switch($themeMode.SelectedIndex){0{'Light'};1{'Dark'};default{'Custom'}};Show-KMessage (Apply-FocsThemeMode -Mode $mode) 'Windows theme'}catch{Show-KMessage $_.Exception.Message 'Theme error' ([System.Windows.Forms.MessageBoxIcon]::Error)}})
+    $openColorSettings.Add_Click({try{Open-FocsSettingsPage 'ms-settings:personalization-colors'}catch{Show-KMessage $_.Exception.Message 'Windows colour settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessHome.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess'}catch{Show-KMessage $_.Exception.Message 'Accessibility settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessText.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-display'}catch{Show-KMessage $_.Exception.Message 'Text size settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessContrast.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-highcontrast'}catch{Show-KMessage $_.Exception.Message 'Contrast theme settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessFilters.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-colorfilter'}catch{Show-KMessage $_.Exception.Message 'Colour filter settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessPointer.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-mousepointer'}catch{Show-KMessage $_.Exception.Message 'Mouse pointer settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessCursor.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-cursor'}catch{Show-KMessage $_.Exception.Message 'Text cursor settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessMagnifier.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-magnifier'}catch{Show-KMessage $_.Exception.Message 'Magnifier settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessCaptions.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-closedcaptioning'}catch{Show-KMessage $_.Exception.Message 'Caption settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessNarrator.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-narrator'}catch{Show-KMessage $_.Exception.Message 'Narrator settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
+    $accessKeyboard.Add_Click({try{Open-FocsSettingsPage 'ms-settings:easeofaccess-keyboard'}catch{Show-KMessage $_.Exception.Message 'Keyboard accessibility settings' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
     $applyProfile.Add_Click({try{Apply-SafeTweaks -Controls $controls;if($controls.Hags.Checked){Apply-HagsChoice -Choice 'Enable HAGS'};[void](Apply-KProfileRegistryDefaults -Profile $script:SelectedProfile);Show-KMessage "Profile $script:SelectedProfile applied. App removal, NIC latency and NVIDIA settings stay explicit on their own pages." 'FOCS profile'}catch{$detail=$_.Exception.Message;if($_.ScriptStackTrace){$detail+="`r`n`r`n"+$_.ScriptStackTrace};Write-KLog "Profile apply failed: $detail";Show-KMessage $detail 'Profile apply error' ([System.Windows.Forms.MessageBoxIcon]::Error)}})
 
     $selectCommon.Add_Click({$common=@('Clipchamp','Microsoft News','Microsoft Weather','Solitaire Collection','Feedback Hub','Maps','Microsoft 365 / Office Hub');for($i=0;$i -lt $debloatList.Items.Count;$i++){$debloatList.SetItemChecked($i,($common -contains [string]$debloatList.Items[$i]))}})
