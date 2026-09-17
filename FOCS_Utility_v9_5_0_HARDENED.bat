@@ -333,8 +333,21 @@ function Get-ActivePowerSchemeGuid {
 
 function Export-RegKeySafe {
     param([string]$Key,[string]$Destination)
-    & reg.exe export $Key $Destination /y 1>$null 2>$null
-    if ($LASTEXITCODE -ne 0) { Write-KLog "Backup skipped unavailable registry key: $Key" }
+    # reg.exe writes a missing-key message to stderr. With the script-wide
+    # ErrorActionPreference=Stop, Windows PowerShell turns that message into a
+    # terminating error before the exit-code check below can run. Missing policy
+    # keys are normal on a clean Windows installation, so contain the native
+    # command's error behavior locally and record the skip in the log.
+    $previousPreference = $ErrorActionPreference
+    $exitCode = 1
+    try {
+        $ErrorActionPreference = 'Continue'
+        & reg.exe export $Key $Destination /y 1>$null 2>$null
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+    if ($exitCode -ne 0) { Write-KLog "Backup skipped unavailable registry key: $Key" }
 }
 
 function New-KRestoreScript {
@@ -4427,7 +4440,7 @@ FOCS v9.5.0 design rules
     $powerTuneBtn.Add_Click({try{$ans=[System.Windows.Forms.MessageBox]::Show("FOCS will benchmark several Windows power plans on this PC, briefly switch between them, and keep the lowest measured CPU-burst + wake-latency result. This does not overclock the CPU. Close games/downloads for a cleaner result. Continue?",'FOCS Power Plan Lab',[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Information);if($ans -ne [System.Windows.Forms.DialogResult]::Yes){return};$form.UseWaitCursor=$true;$msg=Invoke-FocsPowerPlanLab -PowerLabel $powerText;Show-KMessage $msg 'FOCS Power Plan Lab'}catch{Show-KMessage $_.Exception.Message 'Power Plan Lab error' ([System.Windows.Forms.MessageBoxIcon]::Error)}finally{$form.UseWaitCursor=$false}})
 
     $applySelected.Add_Click({try{Apply-SafeTweaks -Controls $controls;if($controls.Hags.Checked){Apply-HagsChoice -Choice 'Enable HAGS'}}catch{Show-KMessage $_.Exception.Message 'Windows baseline error' ([System.Windows.Forms.MessageBoxIcon]::Error)}})
-    $applyProfile.Add_Click({try{Apply-SafeTweaks -Controls $controls;if($controls.Hags.Checked){Apply-HagsChoice -Choice 'Enable HAGS'};[void](Apply-KProfileRegistryDefaults -Profile $script:SelectedProfile);Show-KMessage "Profile $script:SelectedProfile applied. App removal, NIC latency and NVIDIA settings stay explicit on their own pages." 'FOCS profile'}catch{Show-KMessage $_.Exception.Message 'Profile apply error' ([System.Windows.Forms.MessageBoxIcon]::Error)}})
+    $applyProfile.Add_Click({try{Apply-SafeTweaks -Controls $controls;if($controls.Hags.Checked){Apply-HagsChoice -Choice 'Enable HAGS'};[void](Apply-KProfileRegistryDefaults -Profile $script:SelectedProfile);Show-KMessage "Profile $script:SelectedProfile applied. App removal, NIC latency and NVIDIA settings stay explicit on their own pages." 'FOCS profile'}catch{$detail=$_.Exception.Message;if($_.ScriptStackTrace){$detail+="`r`n`r`n"+$_.ScriptStackTrace};Write-KLog "Profile apply failed: $detail";Show-KMessage $detail 'Profile apply error' ([System.Windows.Forms.MessageBoxIcon]::Error)}})
 
     $selectCommon.Add_Click({$common=@('Clipchamp','Microsoft News','Microsoft Weather','Solitaire Collection','Feedback Hub','Maps','Microsoft 365 / Office Hub');for($i=0;$i -lt $debloatList.Items.Count;$i++){$debloatList.SetItemChecked($i,($common -contains [string]$debloatList.Items[$i]))}})
     $clearApps.Add_Click({for($i=0;$i -lt $debloatList.Items.Count;$i++){$debloatList.SetItemChecked($i,$false)}})
