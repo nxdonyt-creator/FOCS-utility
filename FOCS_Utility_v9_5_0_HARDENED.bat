@@ -1268,6 +1268,45 @@ function Get-WingetInstalledVersion {
     } catch { return $null }
 }
 
+function Get-FocsLogitechOmmExe {
+    $candidates = [System.Collections.Generic.List[string]]::new()
+    $candidates.Add((Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links\OnboardMemoryManager.exe'))
+    try {
+        $uninstall = Get-ItemProperty -LiteralPath 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Logitech.OnboardMemoryManager_Microsoft.Winget.Source_8wekyb3d8bbwe' -ErrorAction Stop
+        if ($uninstall.InstallLocation) { $candidates.Add((Join-Path ([string]$uninstall.InstallLocation) 'OnboardMemoryManager.exe')) }
+    } catch {}
+    $packageRoot = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages'
+    if (Test-Path -LiteralPath $packageRoot) {
+        foreach ($file in @(Get-ChildItem -LiteralPath $packageRoot -Filter 'OnboardMemoryManager.exe' -File -Recurse -ErrorAction SilentlyContinue)) {
+            $candidates.Add($file.FullName)
+        }
+    }
+    foreach ($candidate in @($candidates | Select-Object -Unique)) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+            return (Get-Item -LiteralPath $candidate).FullName
+        }
+    }
+    return $null
+}
+
+function Ensure-FocsLogitechOmmShortcut {
+    $exe = Get-FocsLogitechOmmExe
+    if (-not $exe) { throw 'WinGet registered Logitech Onboard Memory Manager, but OnboardMemoryManager.exe was not found.' }
+    $programs = [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)
+    if (-not $programs) { throw 'The current user Start Menu folder could not be resolved.' }
+    $shortcutPath = Join-Path $programs 'Logitech Onboard Memory Manager.lnk'
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $exe
+    $shortcut.WorkingDirectory = Split-Path -Parent $exe
+    $shortcut.IconLocation = $exe
+    $shortcut.Description = 'Logitech Onboard Memory Manager'
+    $shortcut.Save()
+    if (-not (Test-Path -LiteralPath $shortcutPath)) { throw 'The Logitech OMM Start Menu shortcut could not be created.' }
+    Write-KLog "Logitech OMM verified and Start Menu shortcut ready: $shortcutPath | EXE=$exe"
+    return [pscustomobject]@{ Exe=$exe; Shortcut=$shortcutPath }
+}
+
 function Get-FocsAppInstallerStatus {
     $winget = Get-KWinget
     if (-not $winget) { throw 'WinGet is not available. Install or update Microsoft App Installer, then reopen FOCS.' }
@@ -1313,7 +1352,13 @@ function Install-FocsSelectedApps {
             if ($OutputBox) { $OutputBox.Text = "Installing or updating $name..."; [System.Windows.Forms.Application]::DoEvents() }
             Invoke-WingetInstallOrUpgrade -PackageId $id
             $installed = Get-WingetInstalledVersion -PackageId $id
-            $msg = if($installed){"OK - $name ($installed)"}else{"OK - $name (installation completed)"}
+            if (-not $installed) { throw 'WinGet completed without registering the package as installed.' }
+            $detail = ''
+            if ($id -eq 'Logitech.OnboardMemoryManager') {
+                $omm = Ensure-FocsLogitechOmmShortcut
+                $detail = " | Start Menu shortcut created | EXE: $($omm.Exe)"
+            }
+            $msg = "OK - $name ($installed)$detail"
             $results.Add($msg)
             Write-KLog $msg
         } catch {
