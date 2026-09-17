@@ -4384,7 +4384,7 @@ public static class KxttsNativeWindow {
     $dragWindow={param($sender,$e) if($e.Button -eq [System.Windows.Forms.MouseButtons]::Left){[void][KxttsNativeWindow]::ReleaseCapture();[void][KxttsNativeWindow]::SendMessage($form.Handle,0xA1,[IntPtr]2,[IntPtr]::Zero)}}
     $header.Add_MouseDown($dragWindow); $brand=$header.Controls | Where-Object {$_.Text -eq 'FOCS Utility'} | Select-Object -First 1; if($brand){$brand.Add_MouseDown($dragWindow)}
 
-    $side=New-Object System.Windows.Forms.Panel;$side.Location=New-Object System.Drawing.Point(0,100);$side.Size=New-Object System.Drawing.Size(275,830);$side.Anchor='Top,Bottom,Left';$side.AutoScroll=$true;$side.AutoScrollMinSize=New-Object System.Drawing.Size(0,820);$side.BackColor=[System.Drawing.Color]::FromArgb(16,8,28);[void]$form.Controls.Add($side)
+    $side=New-Object System.Windows.Forms.Panel;$side.Location=New-Object System.Drawing.Point(0,100);$side.Size=New-Object System.Drawing.Size(275,830);$side.Anchor='Top,Bottom,Left';$side.AutoScroll=$true;$side.AutoScrollMinSize=New-Object System.Drawing.Size(0,885);$side.BackColor=[System.Drawing.Color]::FromArgb(16,8,28);[void]$form.Controls.Add($side)
     Set-KRoundedRegion -Control $side -Radius 16
     $side.Add_Resize({ param($sender,$e) try { Set-KRoundedRegion -Control $sender -Radius 16 } catch {} })
     $navHome=New-KNavButton $side 'HOME' 18
@@ -4413,8 +4413,10 @@ public static class KxttsNativeWindow {
     Set-FocsTip $navBench 'Multi-run PresentMon benchmark sets with noise-aware comparison and optional hardware telemetry.'
     Set-FocsTip $navAbout 'Shows what FOCS changes, what it avoids, and why.'
 
-    $sysCard=New-KCard $side 14 650 238 150;[void](New-KTitle $sysCard 'Your System' 14 10 205 30 11)
-    $sysInfo=New-KLabel $sysCard ("Windows: $($system.OS)`r`nCPU: $($system.CPU)`r`nGPU: $($system.GPU)`r`nRAM: $($system.RAM) GB") 14 43 208 96;$sysInfo.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
+    $sysCard=New-KCard $side 14 650 238 215;[void](New-KTitle $sysCard 'Your System' 14 10 205 30 11)
+    $cpuSummary=([string]$system.CPU -replace '(?i)\s+\d+-Core Processor$','').Trim()
+    $systemSummaryText="Windows: $($system.OS)`r`nCPU: $cpuSummary`r`nGPU: $($system.GPU)`r`nRAM: $($system.RAM) GB"
+    $sysInfo=New-Object System.Windows.Forms.TextBox;$sysInfo.Multiline=$true;$sysInfo.ReadOnly=$true;$sysInfo.WordWrap=$true;$sysInfo.ScrollBars='Vertical';$sysInfo.TabStop=$false;$sysInfo.Location=New-Object System.Drawing.Point(14,43);$sysInfo.Size=New-Object System.Drawing.Size(208,158);$sysInfo.BackColor=$sysCard.BackColor;$sysInfo.BorderStyle=[System.Windows.Forms.BorderStyle]::None;$sysInfo.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236);$sysInfo.Text=$systemSummaryText;[void]$sysCard.Controls.Add($sysInfo)
 
     $contentHost=New-Object System.Windows.Forms.Panel;$contentHost.Location=New-Object System.Drawing.Point(288,112);$contentHost.Size=New-Object System.Drawing.Size(890,795);$contentHost.Anchor='Top,Bottom,Left,Right';$contentHost.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);[void]$form.Controls.Add($contentHost)
     Set-KRoundedRegion -Control $contentHost -Radius 16
