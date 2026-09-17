@@ -4606,7 +4606,36 @@ public static class KxttsNativeWindow {
     $applyLatencyNic=New-KButton 'APPLY CHECKED EXPERIMENTS' 18 1352 280 40;$applyLatencyNic.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$ncard.Controls.Add($applyLatencyNic);Set-FocsTip $applyLatencyNic 'Backs up the adapter and applies only the checked experiments.'
     $netResult=New-Object System.Windows.Forms.TextBox;$netResult.Multiline=$true;$netResult.ReadOnly=$true;$netResult.ScrollBars='Vertical';$netResult.Location=New-Object System.Drawing.Point(18,1407);$netResult.Size=New-Object System.Drawing.Size(812,150);$netResult.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$netResult.BorderStyle=[System.Windows.Forms.BorderStyle]::FixedSingle;$netResult.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236);[void]$ncard.Controls.Add($netResult);Set-FocsTip $netResult 'Live results. Focus on loss and absolute P95; average ping alone is not the gaming verdict.'
     $script:NetworkAdvancedMode=$false
-    $setNetworkMode={param([bool]$Advanced)$script:NetworkAdvancedMode=$Advanced;$advancedNetwork.Text=if($Advanced){'ADVANCED: ON'}else{'ADVANCED: OFF'};foreach($control in @($targetLabel,$labTarget,$targetHint,$uploadLabel,$bbUpload,$bufferTest,$gatewayTest,$netHost,$netTest,$bbCard,$manualCard,$experimentTitle,$experimentHint,$imCard,$eeeCard,$flowCard,$lsoCard,$rscCard,$rssCard,$applyLatencyNic)){$control.Visible=$Advanced};foreach($control in @($depthLabel,$labDepth,$stabilityTune,$applyBest,$factoryNic,$restoreNic,$autoNote)){$control.Visible=$Advanced};$easyUndo.Visible=-not $Advanced;if($Advanced){$autoTune.Location=New-Object System.Drawing.Point(220,88);$autoTune.Size=New-Object System.Drawing.Size(190,40);$netResult.Location=New-Object System.Drawing.Point(18,1407);$ncard.Height=1600}else{$autoTune.Location=New-Object System.Drawing.Point(14,88);$autoTune.Size=New-Object System.Drawing.Size(360,44);$netResult.Location=New-Object System.Drawing.Point(18,525);$ncard.Height=710}}
+    $setNetworkMode={
+        param([bool]$Advanced)
+        $script:NetworkAdvancedMode=$Advanced
+        $advancedNetwork.Text=if($Advanced){'ADVANCED: ON'}else{'ADVANCED: OFF'}
+        foreach($control in @($targetLabel,$labTarget,$targetHint,$uploadLabel,$bbUpload,$bufferTest,$gatewayTest,$netHost,$netTest,$bbCard,$manualCard,$experimentTitle,$experimentHint,$imCard,$eeeCard,$flowCard,$lsoCard,$rscCard,$rssCard,$applyLatencyNic)){$control.Visible=$Advanced}
+        foreach($control in @($depthLabel,$labDepth,$stabilityTune,$applyBest,$factoryNic,$restoreNic,$autoNote)){$control.Visible=$Advanced}
+        $easyUndo.Visible=-not $Advanced
+
+        # Reapply bounds after WinForms DPI scaling. Without this pass, WinForms
+        # restores the auto-tune button's original advanced-mode width and clips
+        # the label even though Easy Mode requested a wider button before Show().
+        $networkScale=[Math]::Max(0.75,([double]$healthCard.Width/812.0))
+        $sv={param([int]$Value)[int][Math]::Round($Value*$networkScale)}
+        if($Advanced){
+            $healthCard.SetBounds((&$sv 18),(&$sv 75),(&$sv 812),(&$sv 215))
+            $gamingTest.SetBounds((&$sv 14),(&$sv 140),(&$sv 205),(&$sv 42))
+            $autoCard.SetBounds((&$sv 18),(&$sv 305),(&$sv 812),(&$sv 205))
+            $autoTune.SetBounds((&$sv 220),(&$sv 88),(&$sv 190),(&$sv 40))
+            $netResult.SetBounds((&$sv 18),(&$sv 1407),(&$sv 812),(&$sv 150))
+            $ncard.Height=&$sv 1600
+        }else{
+            $healthCard.SetBounds((&$sv 18),(&$sv 75),(&$sv 812),(&$sv 165))
+            $gamingTest.SetBounds((&$sv 14),(&$sv 100),(&$sv 784),(&$sv 44))
+            $autoCard.SetBounds((&$sv 18),(&$sv 255),(&$sv 812),(&$sv 175))
+            $autoTune.SetBounds((&$sv 14),(&$sv 100),(&$sv 384),(&$sv 44))
+            $easyUndo.SetBounds((&$sv 414),(&$sv 100),(&$sv 384),(&$sv 44))
+            $netResult.SetBounds((&$sv 18),(&$sv 445),(&$sv 812),(&$sv 150))
+            $ncard.Height=&$sv 620
+        }
+    }
     $advancedNetwork.Add_Click({& $setNetworkMode (-not $script:NetworkAdvancedMode)});& $setNetworkMode $false
     $script:Ui.AdapterCombo=$adapterCombo;$script:Ui.PropCombo=$propCombo;$script:Ui.ValueCombo=$valueCombo;$script:Ui.CurrentNic=$currentNic
 
@@ -4744,6 +4773,7 @@ FOCS v9.5.0 design rules
     }.GetNewClosure()
     $form.Add_Resize({& $updateShellLayout}.GetNewClosure())
     $form.Add_Shown({& $updateShellLayout}.GetNewClosure())
+    $form.Add_Shown({& $setNetworkMode $script:NetworkAdvancedMode}.GetNewClosure())
     & $updateShellLayout
 
     function Show-KPage([string]$Name,[System.Windows.Forms.Button]$Nav){foreach($p in $pages.Values){$p.Visible=$false};$pages[$Name].Visible=$true;$pages[$Name].BringToFront();Set-KNavSelected -Buttons $navButtons -Selected $Nav}
