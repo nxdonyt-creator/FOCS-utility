@@ -1158,10 +1158,20 @@ function Start-PresentMonCapture {
 }
 
 function Get-KWinget {
+    # An orphaned WindowsApps execution alias can still be returned by Get-Command
+    # even when Microsoft.DesktopAppInstaller is missing. Verify that each candidate
+    # actually starts before treating WinGet as available.
+    $candidates = @()
     $cmd = Get-Command winget.exe -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
+    if ($cmd -and $cmd.Source) { $candidates += [string]$cmd.Source }
     $alias = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps\winget.exe'
-    if (Test-Path -LiteralPath $alias) { return $alias }
+    if (Test-Path -LiteralPath $alias) { $candidates += $alias }
+    foreach ($candidate in @($candidates | Select-Object -Unique)) {
+        try {
+            $version = (& $candidate --version 2>$null | Out-String).Trim()
+            if ($LASTEXITCODE -eq 0 -and $version -match '^v?[0-9]+\.') { return $candidate }
+        } catch {}
+    }
     return $null
 }
 
@@ -1505,7 +1515,10 @@ function Update-LatencyMonTool {
     $installer = Join-Path $script:LatencyMonRoot 'LatencyMon-Setup.exe'
     $current = Get-ManagedVersion -Root $script:LatencyMonRoot
     if (-not $Force -and $current -match [regex]::Escape($ver) -and (Test-Path -LiteralPath $installer)) { return "LatencyMon $ver installer is current" }
-    [void](Get-KVerifiedDownload -Uri 'https://www.resplendence.com/download/LatencyMon.exe' -Destination $installer -CheckSignature -ExpectedSubjectPatterns @('Resplendence'))
+    # Current official LatencyMon installers are signed by the publisher's named
+    # certificate holder, Daniel Terhell, rather than a subject containing the
+    # Resplendence product name. Keep the match anchored to the certificate CN.
+    [void](Get-KVerifiedDownload -Uri 'https://www.resplendence.com/download/LatencyMon.exe' -Destination $installer -CheckSignature -ExpectedSubjectPatterns @('Resplendence','^CN=Daniel Terhell(?:,|$)'))
     Set-ManagedVersion -Root $script:LatencyMonRoot -Version ($ver + ' official installer')
     $sha = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
     Write-KLog "LatencyMon installer downloaded from official site: version=$ver | SHA256=$sha"
