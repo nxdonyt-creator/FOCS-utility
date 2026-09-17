@@ -4328,15 +4328,26 @@ function Start-KxttsGui {
     $workArea = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
     $form.Size = New-Object System.Drawing.Size([Math]::Min(1540,$workArea.Width),[Math]::Min(980,$workArea.Height))
     $form.MinimumSize = New-Object System.Drawing.Size(1100,680)
-    $form.MaximizedBounds = $workArea
     $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
     $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::None
     $form.BackColor = [System.Drawing.Color]::FromArgb(10,5,18)
     $form.ForeColor = [System.Drawing.Color]::White
     $form.Font = New-Object System.Drawing.Font('Segoe UI',10)
     $form.AutoScaleMode = [System.Windows.Forms.AutoScaleMode]::Dpi
-    $form.WindowState = [System.Windows.Forms.FormWindowState]::Maximized
     $script:Ui.Form=$form
+    # Windows PowerShell 5.1/.NET Framework does not expose Form.MaximizedBounds.
+    # Clamp the fully DPI-scaled form to the active monitor's working area using
+    # the public SetDesktopBounds method, which also keeps the taskbar visible.
+    $form.Add_Shown({
+        try {
+            $area=[System.Windows.Forms.Screen]::FromControl($form).WorkingArea
+            $width=[Math]::Min($form.Width,$area.Width)
+            $height=[Math]::Min($form.Height,$area.Height)
+            $left=$area.X+[Math]::Max(0,[int](($area.Width-$width)/2))
+            $top=$area.Y+[Math]::Max(0,[int](($area.Height-$height)/2))
+            $form.SetDesktopBounds($left,$top,$width,$height)
+        } catch { Write-KLog "Window working-area clamp failed: $($_.Exception.Message)" }
+    })
     Set-KRoundedRegion -Control $form -Radius 18
     Add-KDarkBorder -Control $form -Radius 18 -Width 3
     $form.Add_Resize({ param($sender,$e) try { Set-KRoundedRegion -Control $sender -Radius 18; $sender.Invalidate() } catch {} })
