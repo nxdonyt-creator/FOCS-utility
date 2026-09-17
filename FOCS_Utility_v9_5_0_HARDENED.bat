@@ -4372,7 +4372,7 @@ public static class KxttsNativeWindow {
     $brandBadge=New-Object System.Windows.Forms.Panel;$brandBadge.Location=New-Object System.Drawing.Point(28,24);$brandBadge.Size=New-Object System.Drawing.Size(82,48);$brandBadge.BackColor=[System.Drawing.Color]::FromArgb(79,38,133);[void]$header.Controls.Add($brandBadge);Set-KRoundedRegion -Control $brandBadge -Radius 11;Add-KDarkBorder -Control $brandBadge -Radius 11 -Width 1
     $badgeText=New-KLabel $brandBadge 'FOCS' 0 0 82 48;$badgeText.TextAlign='MiddleCenter';$badgeText.Font=New-Object System.Drawing.Font('Segoe UI Semibold',13,[System.Drawing.FontStyle]::Bold);$badgeText.ForeColor=[System.Drawing.Color]::White
     [void](New-KTitle $header 'FOCS Utility v9.5.0' 128 18 500 45 24)
-    $sub=New-KLabel $header 'Gaming optimization, network tuning, debloat and diagnostics  |  UI build 2026.09.17.5' 131 60 700 25;$sub.ForeColor=[System.Drawing.Color]::FromArgb(196,178,224)
+    $sub=New-KLabel $header 'Gaming optimization, network tuning, debloat and diagnostics  |  UI build 2026.09.17.6' 131 60 700 25;$sub.ForeColor=[System.Drawing.Color]::FromArgb(196,178,224)
     $tag=New-KLabel $header 'FPS   |   LATENCY   |   NETWORK   |   CLEAN WINDOWS' 850 52 500 26;$tag.Anchor='Top,Right';$tag.TextAlign='MiddleRight';$tag.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
 
     $minBtn=New-KButton '_' 1374 10 42 30; $minBtn.Anchor='Top,Right'; $minBtn.BackColor=[System.Drawing.Color]::FromArgb(14,7,25); $minBtn.FlatAppearance.BorderColor=[System.Drawing.Color]::Black; [void]$header.Controls.Add($minBtn)
@@ -4384,36 +4384,27 @@ public static class KxttsNativeWindow {
     $dragWindow={param($sender,$e) if($e.Button -eq [System.Windows.Forms.MouseButtons]::Left){[void][KxttsNativeWindow]::ReleaseCapture();[void][KxttsNativeWindow]::SendMessage($form.Handle,0xA1,[IntPtr]2,[IntPtr]::Zero)}}
     $header.Add_MouseDown($dragWindow); $brand=$header.Controls | Where-Object {$_.Text -eq 'FOCS Utility'} | Select-Object -First 1; if($brand){$brand.Add_MouseDown($dragWindow)}
 
-    $side=New-Object System.Windows.Forms.Panel;$side.Location=New-Object System.Drawing.Point(0,100);$side.Size=New-Object System.Drawing.Size(275,830);$side.Anchor='Top,Bottom,Left';$side.AutoScroll=$true;$side.AutoScrollMinSize=New-Object System.Drawing.Size(0,885);$side.BackColor=[System.Drawing.Color]::FromArgb(16,8,28);[void]$form.Controls.Add($side)
+    $side=New-Object System.Windows.Forms.Panel;$side.Location=New-Object System.Drawing.Point(0,100);$side.Size=New-Object System.Drawing.Size(275,830);$side.Anchor='Top,Bottom,Left';$side.AutoScroll=$true;$side.AutoScrollMinSize=New-Object System.Drawing.Size(0,650);$side.BackColor=[System.Drawing.Color]::FromArgb(16,8,28);[void]$form.Controls.Add($side)
     Set-KRoundedRegion -Control $side -Radius 16
     $side.Add_Resize({ param($sender,$e) try { Set-KRoundedRegion -Control $sender -Radius 16 } catch {} })
+    # Task-based navigation: keep the common path short and place specialist tools in one hub.
     $navHome=New-KNavButton $side 'HOME' 18
-    $navTweaks=New-KNavButton $side 'WINDOWS TWEAKS' 70
-    $navDebloat=New-KNavButton $side 'APP DEBLOAT' 122
-    $navInstaller=New-KNavButton $side 'APP INSTALLER' 174
-    $navNvidia=New-KNavButton $side 'NVIDIA / GAME PROFILE' 226
-    $navNetwork=New-KNavButton $side 'NETWORK LAB' 278
-    $navServices=New-KNavButton $side 'SERVICE MANAGER' 330
-    $navRegistry=New-KNavButton $side 'REGISTRY / PRIVACY' 382
-    $navBackup=New-KNavButton $side 'BACKUP & RESTORE' 434
-    $navDiag=New-KNavButton $side 'DIAGNOSTICS' 486
-    $navBench=New-KNavButton $side 'BENCHMARK 2.0' 538
-    $navAbout=New-KNavButton $side 'ABOUT' 590
-    $navButtons=@($navHome,$navTweaks,$navDebloat,$navInstaller,$navNvidia,$navNetwork,$navServices,$navRegistry,$navBackup,$navDiag,$navBench,$navAbout)
-    Set-FocsTip $navHome 'Choose a preset and see the current system summary.'
-    Set-FocsTip $navTweaks 'Core Windows gaming settings. These are the settings used by the Home presets.'
-    Set-FocsTip $navDebloat 'Remove optional Microsoft apps and background software you do not use.'
-    Set-FocsTip $navInstaller 'Install or update selected gaming and utility apps through exact WinGet package IDs.'
-    Set-FocsTip $navNvidia 'Create per-game NVIDIA Profile Inspector settings instead of changing the global driver profile.'
-    Set-FocsTip $navNetwork 'Measure packet loss, jitter and latency, then test NIC settings against your own connection.'
-    Set-FocsTip $navServices 'Change only optional Windows services. Core networking, security and audio services are excluded.'
-    Set-FocsTip $navRegistry 'Reversible privacy, UI and background-activity registry settings.'
-    Set-FocsTip $navBackup 'Create or restore FOCS backups before/after tuning.'
-    Set-FocsTip $navDiag 'Latency Doctor, display/graphics inspection, mouse raw-input polling and compatibility preview.'
-    Set-FocsTip $navBench 'Multi-run PresentMon benchmark sets with noise-aware comparison and optional hardware telemetry.'
-    Set-FocsTip $navAbout 'Shows what FOCS changes, what it avoids, and why.'
+    $navInstaller=New-KNavButton $side 'INSTALL APPS' 70
+    $navTweaks=New-KNavButton $side 'WINDOWS' 122
+    $navNetwork=New-KNavButton $side 'NETWORK' 174
+    $navNvidia=New-KNavButton $side 'GAMING' 226
+    $navDiag=New-KNavButton $side 'DIAGNOSTICS' 278
+    $navMore=New-KNavButton $side 'MORE TOOLS' 330
+    $navButtons=@($navHome,$navInstaller,$navTweaks,$navNetwork,$navNvidia,$navDiag,$navMore)
+    Set-FocsTip $navHome 'Start here: choose a safe preset and review recent changes.'
+    Set-FocsTip $navInstaller 'Install trusted apps or remove optional Windows apps.'
+    Set-FocsTip $navTweaks 'Windows gaming, privacy, services, appearance and accessibility.'
+    Set-FocsTip $navNetwork 'Test the connection first, then apply only measured improvements.'
+    Set-FocsTip $navNvidia 'Per-game NVIDIA settings and repeatable game benchmarks.'
+    Set-FocsTip $navDiag 'Trace latency, inspect graphics and test input responsiveness.'
+    Set-FocsTip $navMore 'Backup, privacy, services, debloat, benchmark and information tools.'
 
-    $sysCard=New-KCard $side 14 650 238 215;[void](New-KTitle $sysCard 'Your System' 14 10 205 30 11)
+    $sysCard=New-KCard $side 14 400 238 215;[void](New-KTitle $sysCard 'Your System' 14 10 205 30 11)
     $cpuSummary=([string]$system.CPU -replace '(?i)\s+\d+-Core Processor$','').Trim()
     $systemSummaryText="Windows: $($system.OS)`r`nCPU: $cpuSummary`r`nGPU: $($system.GPU)`r`nRAM: $($system.RAM) GB"
     $sysInfo=New-Object System.Windows.Forms.TextBox;$sysInfo.Multiline=$true;$sysInfo.ReadOnly=$true;$sysInfo.WordWrap=$true;$sysInfo.ScrollBars='Vertical';$sysInfo.TabStop=$false;$sysInfo.Location=New-Object System.Drawing.Point(14,43);$sysInfo.Size=New-Object System.Drawing.Size(208,158);$sysInfo.BackColor=$sysCard.BackColor;$sysInfo.BorderStyle=[System.Windows.Forms.BorderStyle]::None;$sysInfo.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236);$sysInfo.Text=$systemSummaryText;[void]$sysCard.Controls.Add($sysInfo)
@@ -4440,11 +4431,14 @@ public static class KxttsNativeWindow {
     $updateMini=New-KButton 'CHECK / UPDATE TOOLS' 14 204 286 38;[void]$toolCard.Controls.Add($updateMini)
 
     $pages=@{}
-    foreach($name in @('Home','Tweaks','Debloat','Installer','Nvidia','Network','Services','Registry','Backup','Diagnostics','Bench','About')){$p=New-Object System.Windows.Forms.Panel;$p.Dock='Fill';$p.AutoScroll=$true;$p.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);$p.Visible=$false;[void]$contentHost.Controls.Add($p);$pages[$name]=$p}
+    foreach($name in @('Home','Tweaks','Debloat','Installer','Nvidia','Network','Services','Registry','Backup','Diagnostics','Bench','About','More')){$p=New-Object System.Windows.Forms.Panel;$p.Dock='Fill';$p.AutoScroll=$true;$p.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);$p.Visible=$false;[void]$contentHost.Controls.Add($p);$pages[$name]=$p}
     $script:Ui.Pages=$pages;$script:Ui.NavButtons=$navButtons
 
     # TWEAK OPTIONS first so profile handlers always have live controls.
     $tw=$pages.Tweaks;[void](New-KTitle $tw 'Windows Gaming Tweaks' 12 6 500 36 16);[void](New-KLabel $tw 'Each option is visible and reversible. Hover an option to see what it changes.' 12 43 820 28)
+    $winPrivacy=New-KButton 'PRIVACY' 530 5 95 34;[void]$tw.Controls.Add($winPrivacy)
+    $winServices=New-KButton 'SERVICES' 635 5 95 34;[void]$tw.Controls.Add($winServices)
+    $winAppearance=New-KButton 'APPEARANCE' 740 5 120 34;[void]$tw.Controls.Add($winAppearance)
     $controls=@{};$script:Ui.Controls=$controls
     $safeCard=New-KCard $tw 10 80 860 340;[void](New-KTitle $safeCard 'Gaming baseline' 14 10 400 28 12)
     $controls.GameMode=New-KCheck $safeCard 'Enable Game Mode + disable Game DVR background capture' 18 52 $true
@@ -4521,6 +4515,7 @@ public static class KxttsNativeWindow {
 
     # APP INSTALLER
     $ip=$pages.Installer;[void](New-KTitle $ip 'Useful App Installer' 12 6 500 36 16);[void](New-KLabel $ip 'Install or update trusted catalog entries through exact WinGet package IDs. Review the selection before continuing.' 12 43 840 40)
+    $openDebloat=New-KButton 'REMOVE WINDOWS APPS' 650 5 210 34;[void]$ip.Controls.Add($openDebloat)
     $icard=New-KCard $ip 10 95 860 650
     $appList=New-Object System.Windows.Forms.CheckedListBox;$appList.Location=New-Object System.Drawing.Point(18,20);$appList.Size=New-Object System.Drawing.Size(802,180);$appList.CheckOnClick=$true;$appList.HorizontalScrollbar=$true;$appList.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$appList.ForeColor=[System.Drawing.Color]::FromArgb(225,210,245);[void]$icard.Controls.Add($appList)
     $script:Ui.AppCatalog=@(Get-FocsAppCatalog)
@@ -4537,6 +4532,7 @@ public static class KxttsNativeWindow {
 
     # NVIDIA
     $nv=$pages.Nvidia;[void](New-KTitle $nv 'NVIDIA Settings' 12 6 500 36 16);[void](New-KLabel $nv 'Per-game settings only. Reflex-capable games should use in-game Reflex instead of forcing driver Low Latency Mode.' 12 43 840 40)
+    $openBenchmark=New-KButton 'OPEN BENCHMARK' 650 5 210 34;[void]$nv.Controls.Add($openBenchmark)
     $nvTool=New-KCard $nv 10 95 860 120;[void](New-KTitle $nvTool 'NVIDIA Profile Inspector' 14 10 400 28 12);$nvStatus=New-KLabel $nvTool 'Tool status will update after the automatic check.' 14 48 600 28;$script:Ui.NvStatus=$nvStatus
     $openNpi=New-KButton 'OPEN NPI' 630 42 200 32;[void]$nvTool.Controls.Add($openNpi);$updateNpi=New-KButton 'INSTALL / UPDATE NPI' 630 78 200 32;[void]$nvTool.Controls.Add($updateNpi)
     $nvPreset=New-KCard $nv 10 230 860 425;[void](New-KTitle $nvPreset 'One-click + custom per-game profile' 14 10 500 28 12)
@@ -4684,6 +4680,8 @@ public static class KxttsNativeWindow {
 
     # DIAGNOSTICS
     $dg=$pages.Diagnostics;[void](New-KTitle $dg 'Diagnostics' 12 6 500 36 16);[void](New-KLabel $dg 'Measure first: ETW/WPR latency tracing, graphics/display state, raw mouse polling and compatibility preview.' 12 43 840 38)
+    $diagBackup=New-KButton 'BACKUP' 640 5 100 34;[void]$dg.Controls.Add($diagBackup)
+    $diagAbout=New-KButton 'ABOUT' 750 5 110 34;[void]$dg.Controls.Add($diagAbout)
     $latCard=New-KCard $dg 10 92 860 280;[void](New-KTitle $latCard 'Latency Doctor (ETW / WPR)' 14 10 430 28 12)
     $latInfo=New-KLabel $latCard 'Captures Windows GeneralProfile plus DPC/interrupt/page-in counters. With Windows Performance Toolkit, FOCS also generates DPC/ISR, hard-fault, driver-delay and scheduling reports.' 14 42 815 55;$latInfo.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
     [void](New-KLabel $latCard 'Seconds:' 14 105 65 25);$latSeconds=New-Object System.Windows.Forms.NumericUpDown;$latSeconds.Minimum=10;$latSeconds.Maximum=300;$latSeconds.Value=60;$latSeconds.Location=New-Object System.Drawing.Point(80,102);$latSeconds.Size=New-Object System.Drawing.Size(80,28);[void]$latCard.Controls.Add($latSeconds)
@@ -4745,6 +4743,17 @@ FOCS v9.5.0 design rules
 "@
     $aboutLabel=New-KLabel $aboutCard $aboutText 18 18 815 575;$aboutLabel.ForeColor=[System.Drawing.Color]::FromArgb(216,200,238)
 
+    # MORE TOOLS - a single hub for specialist pages, keeping the main navigation calm.
+    $more=$pages.More;[void](New-KTitle $more 'More Tools' 12 6 500 36 16);[void](New-KLabel $more 'Specialist controls live here. Pick a task; you can always return without losing selections.' 12 43 840 32)
+    $moreDebloatCard=New-KCard $more 10 90 415 140;[void](New-KTitle $moreDebloatCard 'Remove Windows Apps' 16 12 370 28 12);[void](New-KLabel $moreDebloatCard 'Review optional Microsoft apps and remove only what you select.' 16 45 370 38);$moreDebloat=New-KButton 'OPEN APP REMOVAL' 16 91 200 34;[void]$moreDebloatCard.Controls.Add($moreDebloat)
+    $moreServicesCard=New-KCard $more 445 90 415 140;[void](New-KTitle $moreServicesCard 'Service Manager' 16 12 370 28 12);[void](New-KLabel $moreServicesCard 'Manage only the optional services FOCS considers safe to expose.' 16 45 370 38);$moreServices=New-KButton 'OPEN SERVICES' 16 91 200 34;[void]$moreServicesCard.Controls.Add($moreServices)
+    $morePrivacyCard=New-KCard $more 10 245 415 140;[void](New-KTitle $morePrivacyCard 'Privacy && Registry' 16 12 370 28 12);[void](New-KLabel $morePrivacyCard 'Use reversible privacy and background-activity controls.' 16 45 370 38);$morePrivacy=New-KButton 'OPEN PRIVACY' 16 91 200 34;[void]$morePrivacyCard.Controls.Add($morePrivacy)
+    $moreBackupCard=New-KCard $more 445 245 415 140;[void](New-KTitle $moreBackupCard 'Backup && Restore' 16 12 370 28 12);[void](New-KLabel $moreBackupCard 'Create a restore point or return to the latest FOCS backup.' 16 45 370 38);$moreBackup=New-KButton 'OPEN BACKUP' 16 91 200 34;[void]$moreBackupCard.Controls.Add($moreBackup)
+    $moreBenchCard=New-KCard $more 10 400 415 140;[void](New-KTitle $moreBenchCard 'Benchmark 2.0' 16 12 370 28 12);[void](New-KLabel $moreBenchCard 'Compare repeated PresentMon runs instead of trusting one result.' 16 45 370 38);$moreBench=New-KButton 'OPEN BENCHMARK' 16 91 200 34;[void]$moreBenchCard.Controls.Add($moreBench)
+    $moreAppearanceCard=New-KCard $more 445 400 415 140;[void](New-KTitle $moreAppearanceCard 'Appearance && Accessibility' 16 12 370 28 12);[void](New-KLabel $moreAppearanceCard 'Taskbar colour, themes, text, pointer, captions and more.' 16 45 370 38);$moreAppearance=New-KButton 'OPEN APPEARANCE' 16 91 200 34;[void]$moreAppearanceCard.Controls.Add($moreAppearance)
+    $moreAboutCard=New-KCard $more 10 555 415 140;[void](New-KTitle $moreAboutCard 'About FOCS' 16 12 370 28 12);[void](New-KLabel $moreAboutCard 'See the safety rules and exactly what this build avoids.' 16 45 370 38);$moreAbout=New-KButton 'OPEN ABOUT' 16 91 200 34;[void]$moreAboutCard.Controls.Add($moreAbout)
+    $moreFilesCard=New-KCard $more 445 555 415 140;[void](New-KTitle $moreFilesCard 'FOCS Files' 16 12 370 28 12);[void](New-KLabel $moreFilesCard 'Open backups, reports and logs created by the utility.' 16 45 370 38);$moreFiles=New-KButton 'OPEN FOCS FOLDER' 16 91 200 34;[void]$moreFilesCard.Controls.Add($moreFiles)
+
     # Keep the fixed-width page cards visible at higher Windows display scaling.
     # The optional right status rail collapses only when retaining it would force
     # the active page behind a horizontal scrollbar.
@@ -4778,8 +4787,37 @@ FOCS v9.5.0 design rules
     $form.Add_Shown({& $updateShellLayout}.GetNewClosure())
     & $updateShellLayout
 
-    function Show-KPage([string]$Name,[System.Windows.Forms.Button]$Nav){foreach($p in $pages.Values){$p.Visible=$false};$pages[$Name].Visible=$true;$pages[$Name].BringToFront();Set-KNavSelected -Buttons $navButtons -Selected $Nav}
-    $navHome.Add_Click({try{Show-KPage 'Home' $navHome}catch{}});$navTweaks.Add_Click({try{Show-KPage 'Tweaks' $navTweaks}catch{}});$navDebloat.Add_Click({try{Show-KPage 'Debloat' $navDebloat}catch{}});$navInstaller.Add_Click({try{Show-KPage 'Installer' $navInstaller}catch{}});$navNvidia.Add_Click({try{Show-KPage 'Nvidia' $navNvidia}catch{}});$navNetwork.Add_Click({try{Show-KPage 'Network' $navNetwork}catch{}});$navServices.Add_Click({try{Show-KPage 'Services' $navServices}catch{}});$navRegistry.Add_Click({try{Show-KPage 'Registry' $navRegistry}catch{}});$navBackup.Add_Click({try{Show-KPage 'Backup' $navBackup}catch{}});$navDiag.Add_Click({try{Show-KPage 'Diagnostics' $navDiag}catch{}});$navBench.Add_Click({try{Show-KPage 'Bench' $navBench}catch{}});$navAbout.Add_Click({try{Show-KPage 'About' $navAbout}catch{}})
+    function Show-KPage([string]$Name,[System.Windows.Forms.Button]$Nav){
+        foreach($p in $pages.Values){$p.Visible=$false}
+        $target=$pages[$Name]
+        $target.AutoScrollPosition=New-Object System.Drawing.Point(0,0)
+        $target.Visible=$true;$target.BringToFront()
+        Set-KNavSelected -Buttons $navButtons -Selected $Nav
+    }
+    $navHome.Add_Click({try{Show-KPage 'Home' $navHome}catch{}})
+    $navInstaller.Add_Click({try{Show-KPage 'Installer' $navInstaller}catch{}})
+    $navTweaks.Add_Click({try{Show-KPage 'Tweaks' $navTweaks}catch{}})
+    $navNetwork.Add_Click({try{Show-KPage 'Network' $navNetwork}catch{}})
+    $navNvidia.Add_Click({try{Show-KPage 'Nvidia' $navNvidia}catch{}})
+    $navDiag.Add_Click({try{Show-KPage 'Diagnostics' $navDiag}catch{}})
+    $navMore.Add_Click({try{Show-KPage 'More' $navMore}catch{}})
+
+    # Contextual shortcuts keep related tools close without adding sidebar clutter.
+    $openDebloat.Add_Click({try{Show-KPage 'Debloat' $navInstaller}catch{}})
+    $winPrivacy.Add_Click({try{Show-KPage 'Registry' $navTweaks}catch{}})
+    $winServices.Add_Click({try{Show-KPage 'Services' $navTweaks}catch{}})
+    $winAppearance.Add_Click({try{Show-KPage 'Tweaks' $navTweaks;$pages.Tweaks.AutoScrollPosition=New-Object System.Drawing.Point(0,675)}catch{}})
+    $openBenchmark.Add_Click({try{Show-KPage 'Bench' $navNvidia}catch{}})
+    $diagBackup.Add_Click({try{Show-KPage 'Backup' $navDiag}catch{}})
+    $diagAbout.Add_Click({try{Show-KPage 'About' $navDiag}catch{}})
+    $moreDebloat.Add_Click({try{Show-KPage 'Debloat' $navMore}catch{}})
+    $moreServices.Add_Click({try{Show-KPage 'Services' $navMore}catch{}})
+    $morePrivacy.Add_Click({try{Show-KPage 'Registry' $navMore}catch{}})
+    $moreBackup.Add_Click({try{Show-KPage 'Backup' $navMore}catch{}})
+    $moreBench.Add_Click({try{Show-KPage 'Bench' $navMore}catch{}})
+    $moreAppearance.Add_Click({try{Show-KPage 'Tweaks' $navMore;$pages.Tweaks.AutoScrollPosition=New-Object System.Drawing.Point(0,675)}catch{}})
+    $moreAbout.Add_Click({try{Show-KPage 'About' $navMore}catch{}})
+    $moreFiles.Add_Click({try{Start-Process -FilePath $script:DataRoot}catch{Show-KMessage $_.Exception.Message 'FOCS folder' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
 
     $powerTuneBtn.Add_Click({try{$ans=[System.Windows.Forms.MessageBox]::Show("FOCS will benchmark several Windows power plans on this PC, briefly switch between them, and keep the lowest measured CPU-burst + wake-latency result. This does not overclock the CPU. Close games/downloads for a cleaner result. Continue?",'FOCS Power Plan Lab',[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Information);if($ans -ne [System.Windows.Forms.DialogResult]::Yes){return};$form.UseWaitCursor=$true;$msg=Invoke-FocsPowerPlanLab -PowerLabel $powerText;Show-KMessage $msg 'FOCS Power Plan Lab'}catch{Show-KMessage $_.Exception.Message 'Power Plan Lab error' ([System.Windows.Forms.MessageBoxIcon]::Error)}finally{$form.UseWaitCursor=$false}})
 
