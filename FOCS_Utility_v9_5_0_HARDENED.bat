@@ -4418,7 +4418,7 @@ public static class KxttsNativeWindow {
     $systemSummaryText="Windows: $($system.OS)`r`nCPU: $cpuSummary`r`nGPU: $($system.GPU)`r`nRAM: $($system.RAM) GB"
     $sysInfo=New-Object System.Windows.Forms.TextBox;$sysInfo.Multiline=$true;$sysInfo.ReadOnly=$true;$sysInfo.WordWrap=$true;$sysInfo.ScrollBars='Vertical';$sysInfo.TabStop=$false;$sysInfo.Location=New-Object System.Drawing.Point(14,43);$sysInfo.Size=New-Object System.Drawing.Size(208,158);$sysInfo.BackColor=$sysCard.BackColor;$sysInfo.BorderStyle=[System.Windows.Forms.BorderStyle]::None;$sysInfo.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236);$sysInfo.Text=$systemSummaryText;[void]$sysCard.Controls.Add($sysInfo)
 
-    $contentHost=New-Object System.Windows.Forms.Panel;$contentHost.Location=New-Object System.Drawing.Point(288,112);$contentHost.Size=New-Object System.Drawing.Size(890,795);$contentHost.Anchor='Top,Bottom,Left,Right';$contentHost.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);[void]$form.Controls.Add($contentHost)
+    $contentHost=New-Object System.Windows.Forms.Panel;$contentHost.Location=New-Object System.Drawing.Point(288,112);$contentHost.Size=New-Object System.Drawing.Size(890,795);$contentHost.Anchor='Top,Bottom,Left';$contentHost.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);[void]$form.Controls.Add($contentHost)
     Set-KRoundedRegion -Control $contentHost -Radius 16
     $contentHost.Add_Resize({ param($sender,$e) try { Set-KRoundedRegion -Control $sender -Radius 16 } catch {} })
     $right=New-Object System.Windows.Forms.Panel;$right.Location=New-Object System.Drawing.Point(1190,112);$right.Size=New-Object System.Drawing.Size(320,795);$right.Anchor='Top,Bottom,Right';$right.AutoScroll=$true;$right.AutoScrollMinSize=New-Object System.Drawing.Size(0,790);$right.BackColor=[System.Drawing.Color]::FromArgb(10,5,18);[void]$form.Controls.Add($right)
@@ -4712,6 +4712,39 @@ FOCS v9.5.0 design rules
 - No Defender/VBS/firewall disabling, Realtime priority, forced HPET or blanket MSI forcing.
 "@
     $aboutLabel=New-KLabel $aboutCard $aboutText 18 18 815 575;$aboutLabel.ForeColor=[System.Drawing.Color]::FromArgb(216,200,238)
+
+    # Keep the fixed-width page cards visible at higher Windows display scaling.
+    # The optional right status rail collapses only when retaining it would force
+    # the active page behind a horizontal scrollbar.
+    $updateShellLayout={
+        try {
+            $scale=[Math]::Max(1.0,([double]$side.Width/275.0))
+            $gap=[Math]::Max(10,[int][Math]::Round(12*$scale))
+            $outer=[Math]::Max(10,[int][Math]::Round(14*$scale))
+            $clientWidth=$form.ClientSize.Width
+            $clientHeight=$form.ClientSize.Height
+            $contentLeft=$side.Right+$gap
+            $minimumContentWidth=$safeCard.Right+$gap
+            $availableAfterSide=$clientWidth-$contentLeft-$outer
+            $keepRight=$availableAfterSide -ge ($minimumContentWidth+$gap+$right.Width)
+
+            $contentHost.Left=$contentLeft
+            $right.Visible=$keepRight
+            if($keepRight){
+                $right.Left=$clientWidth-$right.Width-$outer
+                $contentHost.Width=[Math]::Max(300,$right.Left-$gap-$contentLeft)
+            }else{
+                $contentHost.Width=[Math]::Max(300,$clientWidth-$outer-$contentLeft)
+            }
+            $usableHeight=[Math]::Max(350,$clientHeight-$contentHost.Top-$outer)
+            $contentHost.Height=$usableHeight
+            $right.Height=$usableHeight
+            $side.Height=[Math]::Max(350,$clientHeight-$side.Top)
+        }catch{Write-KLog "Responsive window layout failed: $($_.Exception.Message)"}
+    }.GetNewClosure()
+    $form.Add_Resize({& $updateShellLayout}.GetNewClosure())
+    $form.Add_Shown({& $updateShellLayout}.GetNewClosure())
+    & $updateShellLayout
 
     function Show-KPage([string]$Name,[System.Windows.Forms.Button]$Nav){foreach($p in $pages.Values){$p.Visible=$false};$pages[$Name].Visible=$true;$pages[$Name].BringToFront();Set-KNavSelected -Buttons $navButtons -Selected $Nav}
     $navHome.Add_Click({try{Show-KPage 'Home' $navHome}catch{}});$navTweaks.Add_Click({try{Show-KPage 'Tweaks' $navTweaks}catch{}});$navDebloat.Add_Click({try{Show-KPage 'Debloat' $navDebloat}catch{}});$navInstaller.Add_Click({try{Show-KPage 'Installer' $navInstaller}catch{}});$navNvidia.Add_Click({try{Show-KPage 'Nvidia' $navNvidia}catch{}});$navNetwork.Add_Click({try{Show-KPage 'Network' $navNetwork}catch{}});$navServices.Add_Click({try{Show-KPage 'Services' $navServices}catch{}});$navRegistry.Add_Click({try{Show-KPage 'Registry' $navRegistry}catch{}});$navBackup.Add_Click({try{Show-KPage 'Backup' $navBackup}catch{}});$navDiag.Add_Click({try{Show-KPage 'Diagnostics' $navDiag}catch{}});$navBench.Add_Click({try{Show-KPage 'Bench' $navBench}catch{}});$navAbout.Add_Click({try{Show-KPage 'About' $navAbout}catch{}})
