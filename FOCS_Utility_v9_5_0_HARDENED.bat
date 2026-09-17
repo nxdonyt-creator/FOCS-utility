@@ -1307,17 +1307,107 @@ function Ensure-FocsLogitechOmmShortcut {
     return [pscustomobject]@{ Exe=$exe; Shortcut=$shortcutPath }
 }
 
+function Get-FocsInstalledAppExe {
+    param([Parameter(Mandatory=$true)][string]$PackageId)
+    $candidates = [System.Collections.Generic.List[string]]::new()
+    switch ($PackageId) {
+        'Hibbiki.Chromium' {
+            $candidates.Add((Join-Path $env:LOCALAPPDATA 'Chromium\Application\chrome.exe'))
+            $candidates.Add((Join-Path $env:ProgramFiles 'Chromium\Application\chrome.exe'))
+            $candidates.Add((Join-Path ${env:ProgramFiles(x86)} 'Chromium\Application\chrome.exe'))
+        }
+        'Discord.Discord' {
+            $candidates.Add((Join-Path $env:LOCALAPPDATA 'Discord\Update.exe'))
+            $root = Join-Path $env:LOCALAPPDATA 'Discord'
+            if (Test-Path -LiteralPath $root) {
+                foreach ($file in @(Get-ChildItem -LiteralPath $root -Filter 'Discord.exe' -File -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)) {
+                    $candidates.Add($file.FullName)
+                }
+            }
+        }
+        'Valve.Steam' {
+            try {
+                $steamPath = [string](Get-ItemPropertyValue -LiteralPath 'HKCU:\Software\Valve\Steam' -Name 'SteamPath' -ErrorAction Stop)
+                if ($steamPath) { $candidates.Add((Join-Path $steamPath 'steam.exe')) }
+            } catch {}
+            $candidates.Add((Join-Path ${env:ProgramFiles(x86)} 'Steam\steam.exe'))
+            $candidates.Add((Join-Path $env:ProgramFiles 'Steam\steam.exe'))
+        }
+        'EpicGames.EpicGamesLauncher' {
+            $candidates.Add((Join-Path $env:ProgramFiles 'Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe'))
+            $candidates.Add((Join-Path ${env:ProgramFiles(x86)} 'Epic Games\Launcher\Portal\Binaries\Win64\EpicGamesLauncher.exe'))
+            $candidates.Add((Join-Path ${env:ProgramFiles(x86)} 'Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe'))
+        }
+        'Logitech.OnboardMemoryManager' {
+            $omm = Get-FocsLogitechOmmExe
+            if ($omm) { $candidates.Add($omm) }
+        }
+        default { throw "Unsupported app package ID: $PackageId" }
+    }
+    foreach ($candidate in @($candidates | Select-Object -Unique)) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+            return (Get-Item -LiteralPath $candidate).FullName
+        }
+    }
+    return $null
+}
+
+function Ensure-FocsAppLaunchEntry {
+    param([Parameter(Mandatory=$true)][string]$PackageId)
+    $exe = Get-FocsInstalledAppExe -PackageId $PackageId
+    if (-not $exe) { throw "WinGet registered $PackageId, but its launch executable was not found." }
+    $meta = switch ($PackageId) {
+        'Hibbiki.Chromium' { @{Name='Chromium';Pattern='^Chromium$';Arguments=''} }
+        'Discord.Discord' { @{Name='Discord';Pattern='^Discord$';Arguments=if([IO.Path]::GetFileName($exe) -ieq 'Update.exe'){'--processStart Discord.exe'}else{''}} }
+        'Valve.Steam' { @{Name='Steam';Pattern='^Steam$';Arguments=''} }
+        'EpicGames.EpicGamesLauncher' { @{Name='Epic Games Launcher';Pattern='^Epic Games Launcher$';Arguments=''} }
+        'Logitech.OnboardMemoryManager' { @{Name='Logitech Onboard Memory Manager';Pattern='^(Logitech )?Onboard Memory Manager$';Arguments=''} }
+    }
+    $roots = @(
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs),
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonPrograms)
+    ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+    $shell = New-Object -ComObject WScript.Shell
+    foreach ($root in $roots) {
+        foreach ($file in @(Get-ChildItem -LiteralPath $root -Filter '*.lnk' -File -Recurse -ErrorAction SilentlyContinue)) {
+            if ($file.BaseName -notmatch $meta.Pattern) { continue }
+            try {
+                $existing = $shell.CreateShortcut($file.FullName)
+                if ($existing.TargetPath -and (Test-Path -LiteralPath $existing.TargetPath -PathType Leaf)) {
+                    return [pscustomobject]@{ Exe=$exe; Shortcut=$file.FullName; Created=$false }
+                }
+            } catch {}
+        }
+    }
+    $programs = [Environment]::GetFolderPath([Environment+SpecialFolder]::Programs)
+    if (-not $programs) { throw 'The current user Start Menu folder could not be resolved.' }
+    $shortcutPath = Join-Path $programs ($meta.Name + '.lnk')
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $exe
+    $shortcut.Arguments = $meta.Arguments
+    $shortcut.WorkingDirectory = Split-Path -Parent $exe
+    $shortcut.IconLocation = $exe
+    $shortcut.Description = $meta.Name
+    $shortcut.Save()
+    if (-not (Test-Path -LiteralPath $shortcutPath)) { throw "The $($meta.Name) Start Menu shortcut could not be created." }
+    Write-KLog "App launch entry created: $shortcutPath | EXE=$exe"
+    return [pscustomobject]@{ Exe=$exe; Shortcut=$shortcutPath; Created=$true }
+}
+
 function Get-FocsAppInstallerStatus {
     $winget = Get-KWinget
     if (-not $winget) { throw 'WinGet is not available. Install or update Microsoft App Installer, then reopen FOCS.' }
     $rows = foreach ($app in Get-FocsAppCatalog) {
         $installed = Get-WingetInstalledVersion -PackageId $app.PackageId
         $available = Get-WingetPackageVersion -PackageId $app.PackageId
+        $exe = if ($installed) { Get-FocsInstalledAppExe -PackageId $app.PackageId } else { $null }
         [pscustomobject]@{
             Name = $app.Name
             PackageId = $app.PackageId
             Installed = if($installed){$installed}else{'Not installed'}
             Available = if($available){$available}else{'Unavailable'}
+            Verified = if(-not $installed){'Not installed'}elseif($exe){'Executable found'}else{'WARNING: package registered, executable missing'}
+            Executable = if($exe){$exe}else{''}
         }
     }
     return @($rows)
@@ -1327,7 +1417,7 @@ function Format-FocsAppInstallerStatus {
     param([object[]]$Status)
     $lines = @('APP INSTALLER STATUS','')
     foreach ($row in @($Status)) {
-        $lines += ("{0}`r`n  ID: {1}`r`n  Installed: {2} | Available: {3}" -f $row.Name,$row.PackageId,$row.Installed,$row.Available)
+        $lines += ("{0}`r`n  ID: {1}`r`n  Installed: {2} | Available: {3}`r`n  Verification: {4}{5}" -f $row.Name,$row.PackageId,$row.Installed,$row.Available,$row.Verified,$(if($row.Executable){"`r`n  EXE: $($row.Executable)"}else{''}))
     }
     return ($lines -join "`r`n")
 }
@@ -1353,12 +1443,9 @@ function Install-FocsSelectedApps {
             Invoke-WingetInstallOrUpgrade -PackageId $id
             $installed = Get-WingetInstalledVersion -PackageId $id
             if (-not $installed) { throw 'WinGet completed without registering the package as installed.' }
-            $detail = ''
-            if ($id -eq 'Logitech.OnboardMemoryManager') {
-                $omm = Ensure-FocsLogitechOmmShortcut
-                $detail = " | Start Menu shortcut created | EXE: $($omm.Exe)"
-            }
-            $msg = "OK - $name ($installed)$detail"
+            $launch = Ensure-FocsAppLaunchEntry -PackageId $id
+            $shortcutState = if ($launch.Created) { 'shortcut created' } else { 'shortcut verified' }
+            $msg = "OK - $name ($installed) | $shortcutState | EXE: $($launch.Exe)"
             $results.Add($msg)
             Write-KLog $msg
         } catch {
@@ -4335,27 +4422,28 @@ public static class KxttsNativeWindow {
     $nvInfo=New-KLabel $nvPreset 'Recommended = Max Performance + Highest Refresh. Competitive also selects High Performance texture filtering and V-Sync Off. Pre-rendered frames stays off for Fortnite/CS2 because Reflex is preferred when supported.' 18 370 805 45;$nvInfo.ForeColor=[System.Drawing.Color]::FromArgb(222,207,243)
 
     # NETWORK
-    $np=$pages.Network;[void](New-KTitle $np 'Network Performance Lab' 12 6 500 36 16);[void](New-KLabel $np 'Gaming-first network diagnostics: absolute P95 tail latency, packet loss and reversibility come before tweak scores.' 12 43 840 40)
+    $np=$pages.Network;[void](New-KTitle $np 'Network Lab' 12 6 500 36 16);[void](New-KLabel $np 'Easy mode shows the two useful actions: test first, then optionally run measured auto-tuning. Advanced tools stay one click away.' 12 43 840 40)
     $ncard=New-KCard $np 10 95 860 1600
     [void](New-KLabel $ncard 'Network adapter:' 18 25 110 25);$adapterCombo=New-Object System.Windows.Forms.ComboBox;$adapterCombo.DropDownStyle='DropDownList';$adapterCombo.Location=New-Object System.Drawing.Point(130,22);$adapterCombo.Size=New-Object System.Drawing.Size(365,28);[void]$ncard.Controls.Add($adapterCombo)
     foreach($a in Get-KPhysicalAdapters){[void]$adapterCombo.Items.Add($a.Name)};if($adapterCombo.Items.Count -gt 0){$adapterCombo.SelectedIndex=0}
-    $refreshNic=New-KButton 'REFRESH ADAPTER' 515 18 145 36;[void]$ncard.Controls.Add($refreshNic);$scanNic=New-KButton 'VIEW NIC REPORT' 675 18 155 36;[void]$ncard.Controls.Add($scanNic)
-    Set-FocsTip $adapterCombo 'Select the physical adapter used by the game. All automatic decisions are measured on this adapter.';Set-FocsTip $refreshNic 'Reload the values exposed by the NIC driver.';Set-FocsTip $scanNic 'Show the current adapter, driver and advanced-property inventory without changing anything.'
+    $refreshNic=New-KButton 'REFRESH ADAPTER' 515 18 145 36;[void]$ncard.Controls.Add($refreshNic);$advancedNetwork=New-KButton 'ADVANCED: OFF' 675 18 155 36;$advancedNetwork.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$ncard.Controls.Add($advancedNetwork)
+    Set-FocsTip $adapterCombo 'FOCS selects the first active physical adapter automatically. Change it only if this is not the adapter used for gaming.';Set-FocsTip $refreshNic 'Reload the values exposed by the NIC driver.';Set-FocsTip $advancedNetwork 'Show loaded-latency, queue-control and manual driver experiments.'
 
-    $healthCard=New-KCard $ncard 18 75 812 215;[void](New-KTitle $healthCard '1. Low Latency Gaming Health' 14 10 460 28 12)
-    $healthDesc=New-KLabel $healthCard 'This is the main network verdict. It measures absolute P95 tail latency, not just average ping. Target: P95 under 40 ms with no meaningful loss.' 14 42 775 42;$healthDesc.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
-    [void](New-KLabel $healthCard 'Game/server target:' 14 92 125 25);$labTarget=New-Object System.Windows.Forms.TextBox;$labTarget.Text='';$labTarget.Location=New-Object System.Drawing.Point(140,89);$labTarget.Size=New-Object System.Drawing.Size(210,28);[void]$healthCard.Controls.Add($labTarget);$targetHint=New-KLabel $healthCard 'Optional IP/hostname' 360 92 150 25;$targetHint.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
-    [void](New-KLabel $healthCard 'Upload Mbps:' 520 92 90 25);$bbUpload=New-Object System.Windows.Forms.NumericUpDown;$bbUpload.DecimalPlaces=1;$bbUpload.Minimum=2;$bbUpload.Maximum=10000;$bbUpload.Increment=1;$bbUpload.Value=$bbUpload.Minimum;$bbUpload.Location=New-Object System.Drawing.Point(610,89);$bbUpload.Size=New-Object System.Drawing.Size(105,28);[void]$healthCard.Controls.Add($bbUpload)
-    $gamingTest=New-KButton 'RUN GAMING HEALTH' 14 140 205 42;$gamingTest.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$healthCard.Controls.Add($gamingTest)
+    $healthCard=New-KCard $ncard 18 75 812 215;[void](New-KTitle $healthCard '1. Test My Connection' 14 10 460 28 12)
+    $healthDesc=New-KLabel $healthCard 'Start here. FOCS checks idle and busy-network gaming latency, packet loss and your router, then gives a plain PASS / WARN / FAIL result.' 14 42 775 42;$healthDesc.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
+    $targetLabel=New-KLabel $healthCard 'Game/server target:' 14 92 125 25;$labTarget=New-Object System.Windows.Forms.TextBox;$labTarget.Text='';$labTarget.Location=New-Object System.Drawing.Point(140,89);$labTarget.Size=New-Object System.Drawing.Size(210,28);[void]$healthCard.Controls.Add($labTarget);$targetHint=New-KLabel $healthCard 'Optional IP/hostname' 360 92 150 25;$targetHint.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
+    $uploadLabel=New-KLabel $healthCard 'Upload Mbps:' 520 92 90 25;$bbUpload=New-Object System.Windows.Forms.NumericUpDown;$bbUpload.DecimalPlaces=1;$bbUpload.Minimum=2;$bbUpload.Maximum=10000;$bbUpload.Increment=1;$bbUpload.Value=$bbUpload.Minimum;$bbUpload.Location=New-Object System.Drawing.Point(610,89);$bbUpload.Size=New-Object System.Drawing.Size(105,28);[void]$healthCard.Controls.Add($bbUpload)
+    $gamingTest=New-KButton 'START QUICK CHECK' 14 140 205 42;$gamingTest.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$healthCard.Controls.Add($gamingTest)
     $bufferTest=New-KButton 'FULL LOADED LATENCY' 230 140 200 42;[void]$healthCard.Controls.Add($bufferTest)
     $gatewayTest=New-KButton 'GATEWAY PING' 441 140 150 42;[void]$healthCard.Controls.Add($gatewayTest)
     $netHost=New-Object System.Windows.Forms.TextBox;$netHost.Text='1.1.1.1';$netHost.Location=New-Object System.Drawing.Point(602,145);$netHost.Size=New-Object System.Drawing.Size(105,28);[void]$healthCard.Controls.Add($netHost);$netTest=New-KButton 'PING' 716 140 72 38;[void]$healthCard.Controls.Add($netTest)
     Set-FocsTip $gamingTest 'Measures idle, download-loaded and upload-loaded P95 plus the gateway. PASS requires every measured gaming path to stay below 40 ms.';Set-FocsTip $bufferTest 'Detailed bufferbloat test. Shows both added latency and absolute P95 so a good average cannot hide gaming spikes.';Set-FocsTip $labTarget 'Optional game/server IP or hostname. A bad custom target with clean public paths usually points to routing/peering rather than NIC tuning.';Set-FocsTip $bbUpload 'Enter a recent real upload speed. It is used only to verify that upload-load tests actually stress the line.'
 
-    $autoCard=New-KCard $ncard 18 305 812 205;[void](New-KTitle $autoCard '2. Automatic NIC Tuner - P95 gated' 14 10 500 28 12)
-    $autoDesc=New-KLabel $autoCard 'Compares current settings, driver defaults and supported NIC values. A candidate is rejected if gaming P95 crosses 40 ms or tail latency meaningfully regresses.' 14 43 775 42;$autoDesc.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
-    [void](New-KLabel $autoCard 'Depth:' 14 97 55 25);$labDepth=New-Object System.Windows.Forms.ComboBox;$labDepth.DropDownStyle='DropDownList';foreach($d in @('Quick','Balanced','Deep')){[void]$labDepth.Items.Add($d)};$labDepth.SelectedIndex=1;$labDepth.Location=New-Object System.Drawing.Point(70,94);$labDepth.Size=New-Object System.Drawing.Size(135,28);[void]$autoCard.Controls.Add($labDepth)
-    $autoTune=New-KButton 'RUN P95 AUTO TUNER' 220 88 190 40;$autoTune.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$autoCard.Controls.Add($autoTune);$stabilityTune=New-KButton 'STABILITY FIRST' 420 88 155 40;$stabilityTune.BackColor=[System.Drawing.Color]::FromArgb(76,38,132);[void]$autoCard.Controls.Add($stabilityTune);$applyBest=New-KButton 'APPLY SAVED BEST' 585 88 200 40;$applyBest.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$autoCard.Controls.Add($applyBest)
+    $autoCard=New-KCard $ncard 18 305 812 205;[void](New-KTitle $autoCard '2. Improve It Automatically (optional)' 14 10 500 28 12)
+    $autoDesc=New-KLabel $autoCard 'FOCS measures every change and keeps only a result that improves gaming latency without adding loss or NIC errors. You can undo it at any time.' 14 43 775 42;$autoDesc.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236)
+    $depthLabel=New-KLabel $autoCard 'Depth:' 14 97 55 25;$labDepth=New-Object System.Windows.Forms.ComboBox;$labDepth.DropDownStyle='DropDownList';foreach($d in @('Quick','Balanced','Deep')){[void]$labDepth.Items.Add($d)};$labDepth.SelectedIndex=1;$labDepth.Location=New-Object System.Drawing.Point(70,94);$labDepth.Size=New-Object System.Drawing.Size(135,28);[void]$autoCard.Controls.Add($labDepth)
+    $autoTune=New-KButton 'MEASURED AUTO-TUNE' 220 88 190 40;$autoTune.BackColor=[System.Drawing.Color]::FromArgb(104,56,184);[void]$autoCard.Controls.Add($autoTune);$stabilityTune=New-KButton 'STABILITY FIRST' 420 88 155 40;$stabilityTune.BackColor=[System.Drawing.Color]::FromArgb(76,38,132);[void]$autoCard.Controls.Add($stabilityTune);$applyBest=New-KButton 'APPLY SAVED BEST' 585 88 200 40;$applyBest.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$autoCard.Controls.Add($applyBest)
+    $easyUndo=New-KButton 'UNDO FOCS NETWORK CHANGES' 390 88 395 44;$easyUndo.BackColor=[System.Drawing.Color]::FromArgb(90,40,40);[void]$autoCard.Controls.Add($easyUndo)
     $factoryNic=New-KButton 'DRIVER DEFAULTS' 14 145 170 38;[void]$autoCard.Controls.Add($factoryNic);$restoreNic=New-KButton 'RESTORE BACKUP' 194 145 170 38;[void]$autoCard.Controls.Add($restoreNic)
     $autoNote=New-KLabel $autoCard 'Packet loss and NIC errors remain hard vetoes. Tail latency now outranks tiny average-ping wins.' 385 151 400 30;$autoNote.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
     Set-FocsTip $labDepth 'Balanced or Deep is preferred for network tuning because P95 is noisy on very short tests.';Set-FocsTip $autoTune 'Restarts the adapter while testing. It will not keep a setting that meaningfully worsens gaming P95, loss or NIC error counters.';Set-FocsTip $applyBest 'Reapply the last measured profile for this exact adapter.'
@@ -4368,10 +4456,10 @@ public static class KxttsNativeWindow {
 
     $manualCard=New-KCard $ncard 18 760 812 145;[void](New-KTitle $manualCard '4. Manual Driver Control' 14 10 400 28 12)
     [void](New-KLabel $manualCard 'Property:' 14 53 70 25);$propCombo=New-Object System.Windows.Forms.ComboBox;$propCombo.DropDownStyle='DropDownList';$propCombo.Location=New-Object System.Drawing.Point(82,50);$propCombo.Size=New-Object System.Drawing.Size(340,28);[void]$manualCard.Controls.Add($propCombo);[void](New-KLabel $manualCard 'Value:' 435 53 50 25);$valueCombo=New-Object System.Windows.Forms.ComboBox;$valueCombo.DropDownStyle='DropDownList';$valueCombo.Location=New-Object System.Drawing.Point(485,50);$valueCombo.Size=New-Object System.Drawing.Size(300,28);[void]$manualCard.Controls.Add($valueCombo)
-    $applyNicValue=New-KButton 'APPLY ONE PROPERTY' 14 92 210 36;$applyNicValue.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$manualCard.Controls.Add($applyNicValue);$currentNic=New-KLabel $manualCard 'Current value: -' 240 98 545 25;$currentNic.ForeColor=[System.Drawing.Color]::FromArgb(214,185,255)
+    $applyNicValue=New-KButton 'APPLY ONE PROPERTY' 14 92 210 36;$applyNicValue.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$manualCard.Controls.Add($applyNicValue);$currentNic=New-KLabel $manualCard 'Current value: -' 240 98 345 25;$currentNic.ForeColor=[System.Drawing.Color]::FromArgb(214,185,255);$scanNic=New-KButton 'VIEW NIC REPORT' 610 92 175 36;[void]$manualCard.Controls.Add($scanNic)
     Set-FocsTip $propCombo 'Real properties reported by this NIC driver only.';Set-FocsTip $valueCombo 'Only values exposed as valid by the selected driver are listed.';Set-FocsTip $applyNicValue 'Backs up the NIC and changes exactly one property.'
 
-    [void](New-KTitle $ncard '5. Manual A/B Experiments' 18 925 380 28 12);$experimentHint=New-KLabel $ncard 'No checkbox is assumed to be faster. Apply one idea, then re-run Gaming Health / Benchmark.' 18 955 805 25;$experimentHint.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
+    $experimentTitle=New-KTitle $ncard '5. Manual A/B Experiments' 18 925 380 28 12;$experimentHint=New-KLabel $ncard 'No checkbox is assumed to be faster. Apply one idea, then re-run Gaming Health / Benchmark.' 18 955 805 25;$experimentHint.ForeColor=[System.Drawing.Color]::FromArgb(181,162,211)
     $imCard=New-KCard $ncard 18 990 390 108;$netIm=New-KCheck $imCard 'Interrupt Moderation' 14 10 $false;$netIm.Size=New-Object System.Drawing.Size(350,30);$imDesc=New-KLabel $imCard 'Changes interrupt batching. Lower moderation can reduce latency but increases CPU work.' 36 43 335 52;$imDesc.ForeColor=[System.Drawing.Color]::FromArgb(205,188,230)
     $eeeCard=New-KCard $ncard 422 990 390 108;$netEee=New-KCheck $eeeCard 'Disable Energy Efficient Ethernet' 14 10 $false;$netEee.Size=New-Object System.Drawing.Size(350,30);$eeeDesc=New-KLabel $eeeCard 'Prevents Ethernet low-power states. Useful only if measurement shows fewer spikes.' 36 43 335 52;$eeeDesc.ForeColor=[System.Drawing.Color]::FromArgb(205,188,230)
     $flowCard=New-KCard $ncard 18 1110 390 108;$netFlow=New-KCheck $flowCard 'Disable Flow Control' 14 10 $false;$netFlow.Size=New-Object System.Drawing.Size(350,30);$flowDesc=New-KLabel $flowCard 'Changes pause-frame behavior. Can reduce pauses or make congestion worse; always A/B test.' 36 43 335 52;$flowDesc.ForeColor=[System.Drawing.Color]::FromArgb(205,188,230)
@@ -4381,6 +4469,9 @@ public static class KxttsNativeWindow {
     Set-FocsTip $imCard 'A/B test interrupt moderation with Gaming Health; do not assume Off is better.';Set-FocsTip $eeeCard 'Power-saving link states can add variability on some adapters.';Set-FocsTip $flowCard 'Flow Control is congestion-dependent; disable only as an experiment.';Set-FocsTip $lsoCard 'Offload changes affect CPU and batching. Measure P95 and frametimes.';Set-FocsTip $rscCard 'RSC can change receive batching. P95 regression is a reject.';Set-FocsTip $rssCard 'FOCS keeps RSS as the default baseline on multi-core systems.'
     $applyLatencyNic=New-KButton 'APPLY CHECKED EXPERIMENTS' 18 1352 280 40;$applyLatencyNic.BackColor=[System.Drawing.Color]::FromArgb(73,38,125);[void]$ncard.Controls.Add($applyLatencyNic);Set-FocsTip $applyLatencyNic 'Backs up the adapter and applies only the checked experiments.'
     $netResult=New-Object System.Windows.Forms.TextBox;$netResult.Multiline=$true;$netResult.ReadOnly=$true;$netResult.ScrollBars='Vertical';$netResult.Location=New-Object System.Drawing.Point(18,1407);$netResult.Size=New-Object System.Drawing.Size(812,150);$netResult.BackColor=[System.Drawing.Color]::FromArgb(13,7,23);$netResult.BorderStyle=[System.Windows.Forms.BorderStyle]::FixedSingle;$netResult.ForeColor=[System.Drawing.Color]::FromArgb(213,197,236);[void]$ncard.Controls.Add($netResult);Set-FocsTip $netResult 'Live results. Focus on loss and absolute P95; average ping alone is not the gaming verdict.'
+    $script:NetworkAdvancedMode=$false
+    $setNetworkMode={param([bool]$Advanced)$script:NetworkAdvancedMode=$Advanced;$advancedNetwork.Text=if($Advanced){'ADVANCED: ON'}else{'ADVANCED: OFF'};foreach($control in @($targetLabel,$labTarget,$targetHint,$uploadLabel,$bbUpload,$bufferTest,$gatewayTest,$netHost,$netTest,$bbCard,$manualCard,$experimentTitle,$experimentHint,$imCard,$eeeCard,$flowCard,$lsoCard,$rscCard,$rssCard,$applyLatencyNic)){$control.Visible=$Advanced};foreach($control in @($depthLabel,$labDepth,$stabilityTune,$applyBest,$factoryNic,$restoreNic,$autoNote)){$control.Visible=$Advanced};$easyUndo.Visible=-not $Advanced;if($Advanced){$autoTune.Location=New-Object System.Drawing.Point(220,88);$autoTune.Size=New-Object System.Drawing.Size(190,40);$netResult.Location=New-Object System.Drawing.Point(18,1407);$ncard.Height=1600}else{$autoTune.Location=New-Object System.Drawing.Point(14,88);$autoTune.Size=New-Object System.Drawing.Size(360,44);$netResult.Location=New-Object System.Drawing.Point(18,525);$ncard.Height=710}}
+    $advancedNetwork.Add_Click({& $setNetworkMode (-not $script:NetworkAdvancedMode)});& $setNetworkMode $false
     $script:Ui.AdapterCombo=$adapterCombo;$script:Ui.PropCombo=$propCombo;$script:Ui.ValueCombo=$valueCombo;$script:Ui.CurrentNic=$currentNic
 
     # SERVICES
@@ -4662,6 +4753,7 @@ FOCS v9.5.0 design rules
             Exit-FocsBusy
         }
     })
+    $easyUndo.Add_Click({ $bbRevert.PerformClick() })
     $openRouter.Add_Click({try{$gw=Get-FocsDefaultGateway;if(-not $gw){throw 'Default gateway not found.'};Start-Process ("http://"+$gw)}catch{Show-KMessage $_.Exception.Message 'Open router' ([System.Windows.Forms.MessageBoxIcon]::Warning)}})
     $runLatency.Add_Click({try{$form.UseWaitCursor=$true;$latOut.Text=Invoke-FocsLatencyDoctor -Seconds ([int]$latSeconds.Value) -OutputBox $latOut}catch{$latOut.Text="Latency Doctor failed: $($_.Exception.Message)";Write-KLog $latOut.Text}finally{$form.UseWaitCursor=$false}})
     $installWpt.Add_Click({try{$form.UseWaitCursor=$true;$x=Install-FocsWpt;Show-KMessage "Windows Performance Toolkit ready:`r`n$x" 'WPT installed'}catch{Show-KMessage $_.Exception.Message 'WPT install error' ([System.Windows.Forms.MessageBoxIcon]::Error)}finally{$form.UseWaitCursor=$false}})
