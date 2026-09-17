@@ -1952,6 +1952,13 @@ function Uninstall-KOneDrive {
     if ($winget) {
         $p = Start-Process -FilePath $winget -ArgumentList @('uninstall','--id','Microsoft.OneDrive','--exact','--silent','--accept-source-agreements','--disable-interactivity') -PassThru -Wait
         if ($p.ExitCode -eq 0) { Write-KLog 'OneDrive uninstalled via winget.'; return 'OneDrive uninstall completed via winget.' }
+        # 0x8A150014 / -1978335212 is WinGet's documented
+        # APPINSTALLER_CLI_ERROR_NO_APPLICATIONS_FOUND result. For an uninstall
+        # request this means the desired end state is already satisfied.
+        if ($p.ExitCode -eq -1978335212) {
+            Write-KLog 'OneDrive is already absent; winget found no installed package.'
+            return 'OneDrive is not installed. No changes were needed.'
+        }
         Write-KLog "winget OneDrive uninstall exit code $($p.ExitCode); trying Windows setup fallback."
     }
     $candidates = @((Join-Path $env:SystemRoot 'SysWOW64\OneDriveSetup.exe'),(Join-Path $env:SystemRoot 'System32\OneDriveSetup.exe'))
