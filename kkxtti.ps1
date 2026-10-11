@@ -1,4 +1,4 @@
-# KKxtti debloat utility 3.1.0 - inspect this script before remote execution.
+# KKxtti debloat utility 3.2.0 - inspect this script before remote execution.
 # Source and release: https://github.com/nxdonyt-creator/FOCS-utility/tree/main/kkxtti
 # This launcher opens the UI without applying tweaks or requesting elevation.
 & {
@@ -142,5 +142,5 @@ function Invoke-KKxttiLauncher([string]$Version,[string]$ArchiveUrl,[string]$Arc
  $destination
 }
 
- Invoke-KKxttiLauncher -Version '3.1.0' -ArchiveUrl 'https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti/releases/3.1.0/KKxtti-debloat-utility-3.1.0.zip' -ArchiveSha256 'C4F4FEF29B92A7B5F6A1593D0A0DF498A558D230EFC673C2A08D93D4D8E9D867' -ManifestSha256 'FFFFFC0618001E7D330DCEE22E1CDC7F187FF425DC49EC49B25ADF8A9E379588'
+ Invoke-KKxttiLauncher -Version '3.2.0' -ArchiveUrl 'https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti/releases/3.2.0/KKxtti-debloat-utility-3.2.0.zip' -ArchiveSha256 '4373AA4DE5CE21D31F0FEA484AAA79E7DAF8D58FE36CC25DC346FA86835605FD' -ManifestSha256 '2D69DAC5B1D1781114F283E850CD80D43243D5E44B0351149D905DA19BCCE3DA'
 }

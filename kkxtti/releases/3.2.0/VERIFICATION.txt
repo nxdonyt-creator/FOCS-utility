@@ -1,0 +1,76 @@
+KKXTTI DEBLOAT UTILITY 3.2.0 - VERIFICATION
+11 October 2026
+
+756 automated assertions/checks passed:
+44 control/app engine: isolated HKCU fixture keys; Appx operations mocked.
+250 expanded controls: registry reads/writes mocked; 103 controls covered.
+76 system engine: optional system/native/BitLocker mutators mocked.
+25 DNS engine: adapter/DNS setters mocked.
+37 installer engine: installers/network mocked; disposable ZIP fixtures.
+48 network engine: adapter setters/reconnect mocked.
+32 game engine: temporary INI fixtures only.
+19 interrupted recovery: mock registry and game-file fixtures.
+30 base utility: boot/power/native/app operations mocked; helper hashes checked.
+20 C# frame analysis: synthetic CSV data only.
+81 web bootstrap: downloads/process launches mocked; disposable archive/cache.
+84 new gaming/profile/peripheral/reset assertions: NVIDIA and Windows mutators
+   mocked; Fortnite INI changes use files isolated inside the workspace.
+10 native mouse identity and read-only-preview command checks against the
+   compiled executable, without opening windows or starting input capture.
+
+All prior 662 assertions were rerun for this release. The new tests cover
+NVIDIA inherited/local override restoration, cancellation, save failure,
+conflicting later edits and tampered setting IDs; game encoding, low graphics,
+render scale and unrelated-key preservation; separate custom power plan
+creation, supported-setting filtering, no DC writes, hidden-setting conflicts,
+and inactive incomplete-plan retention after an injected failure.
+Restore-point tests require a newly observed point and reject a frequency-limit
+no-op. Reset-all tests cover real journal ordering, exclusion of app removal,
+wrong-PC/oversized journal refusal, partial completion and interrupted records.
+PnP fixtures cover product names, composite grouping, receiver ambiguity,
+disconnection and missing device properties under strict mode.
+
+Tests ran in Windows PowerShell 5.1 and the installed .NET Framework runtime.
+Counts are assertions, not real PCs or game configurations. The complete native
+executable rebuilt successfully as x64 version 3.2.0.0. All 27 PowerShell source
+files and both JSON files parsed successfully.
+
+READ-ONLY CHECKS ON THE ACTUAL PC
+- All six custom AC power settings were readable and supported. The existing
+  power plan remained active; no plan was created, activated or deleted.
+- The installed NVIDIA API found Fortnite and Rainbow Six Siege game profiles
+  and read the four selected settings. No driver value was changed.
+- Present device enumeration resolved Razer Viper V2 Pro, Apex Pro TKL 2023,
+  LIGHTSPEED Receiver and a separately identified Logitech virtual interface.
+  Inventory reflects devices connected at the moment of inspection.
+- Existing Fortnite graphics keys were inspected without writing the config.
+- Native read-only previews were restricted to the non-primary monitor.
+  Performance profile cards and the 103-control page were visually inspected.
+  The final rebuilt dashboard showed live peripheral identity (including the
+  LIGHTSPEED receiver while it supplied input), updated device-group counts,
+  live hardware data, the purple interface and no saved mutations.
+- The UI helper refused later clicks with "user input was detected in this
+  window" while the user worked. Further interactive navigation was stopped;
+  a complete final-build click-through of every page/modal was not performed.
+  Preview mode blocks settings, reset and restore-point commands and elevation.
+  Owned read-only preview processes were stopped after verification.
+
+NOT LIVE-TESTED DURING THIS STUDY SESSION
+Applying/resetting actual Windows, NVIDIA, boot, power, game or network settings;
+restore-point creation; app installs/removals; encryption/decryption; reconnects;
+restarts; optional-feature servicing; firmware; stress/thermal load; anti-cheat
+compatibility; and game FPS, frame consistency or click-to-photon improvement.
+The user authorized isolated tests and read-only checks only.
+
+Unsupported settings and policies may behave differently across Windows,
+driver, browser and game versions. A registry readback does not prove a policy
+is honored. The custom power/NVIDIA/graphics profiles need controlled in-game
+comparisons; there is no claim of a universal best profile.
+
+Prior UI checks (3.1) covered selection reviews/cancellation, debloat inventory,
+app installer inventory/review, DNS/network states and system-control states.
+These observations are historical and are not presented as new 3.2 live tests.
+
+The source and tests are included. New research and precise profile settings are
+in SOURCES 3.2.txt. Scan/package results are in RELEASE CHECKS.txt. Public download
+verification is recorded after publication so pinned package hashes stay fixed.

@@ -1,0 +1,105 @@
+KKXTTI 3.2 - GAMING PROFILES AND DEVICE DETECTION
+Research and verification: 11 October 2026
+
+CUSTOM POWER PLAN
+KKxtti Ultimate Gaming is a separate copy of the current desktop power plan.
+Supported AC settings: processor minimum 5%, maximum 100%, boost mode 2,
+energy-performance preference 0, CPPC autonomous selection 1, PCIe link-state
+power saving 0. Required processor bounds must be available; optional settings
+are skipped when the platform does not expose them. Other inherited settings,
+display/sleep choices and all DC values remain as they were.
+
+The low idle minimum permits downclocking; it is not a cap on gaming frequency.
+This is an engineering candidate for comparison, not a measured optimum for
+every X3D chip or game. CPPC settings may be ignored by a platform. Increased
+power/heat can negate gains. Firmware limits, Curve Optimizer, RAM/FCLK stability,
+overclocking, C-states and scheduler affinity are not changed by this profile.
+Reset restores the previous active plan and deletes only the unchanged plan
+created by this transaction. An incomplete plan without a complete fingerprint
+is retained for manual inspection instead of being deleted automatically.
+
+Microsoft documents the settings and their platform-dependent behavior:
+https://learn.microsoft.com/en-us/windows-hardware/customize/power-settings/options-for-perf-state-engine-perfenergypreference
+https://learn.microsoft.com/en-us/windows-hardware/customize/power-settings/options-for-perf-state-engine-perfboostmode
+https://learn.microsoft.com/en-us/windows-hardware/customize/power-settings/options-for-perf-state-engine-perfautonomousmode
+https://learn.microsoft.com/en-us/windows-hardware/design/device-experiences/powercfg-command-line-options
+https://learn.microsoft.com/en-us/windows/win32/api/powrprof/nf-powrprof-powerreadacvalueindex
+GUIDs also checked against Microsoft's WinSDK headers and local power metadata:
+https://github.com/microsoft/win32metadata/blob/main/generation/WinSDK/RecompiledIdlHeaders/um/winnt.h
+
+NVIDIA COMPETITIVE PROFILE
+Four documented per-game settings: prefer maximum performance, high-performance
+texture filtering, V-Sync off and the driver frame limiter off. The selected
+game retains its own cap. Fortnite and Rainbow Six Siege are the allowlisted
+games. The installed driver's existing game profile must be found; KKxtti never
+falls back to modifying the global/base profile. No driver download is needed.
+
+Maximum-performance power can increase GPU heat; reduced filtering can shimmer.
+V-Sync off permits tearing and targets the user's competitive, non-VRR setup.
+Use in-game Reflex when available. The preset does not force hidden driver
+queue/LOD/shader flags or override a game's Reflex controls. Reset restores old
+local overrides and removes introduced overrides to restore inheritance.
+Close the game, NVIDIA Control Panel and other profile editors before changes.
+
+NVIDIA Control Panel documentation:
+https://www.nvidia.com/content/Control-Panel-Help/vLatest/en-us/mergedProjects/3D%20Settings/Manage_3D_Settings_%28reference%29.htm
+NVIDIA latency guidance (2020): Reflex, V-Sync tradeoffs and the need to measure
+situational interrupt/scheduling changes. This is not evidence of a current
+universal best setting or of a gain on this particular PC:
+https://www.nvidia.com/en-us/geforce/guides/system-latency-optimization-guide/
+
+The minimal NVAPI interop uses public NVIDIA DRS structures/identifiers and only
+the installed Windows System32 nvapi64.dll. No downloaded DLL is loaded.
+https://github.com/NVIDIA/nvapi/blob/main/nvapi.h
+https://github.com/NVIDIA/nvapi/blob/main/nvapi_interface.h
+https://github.com/NVIDIA/nvapi/blob/main/NvApiDriverSettings.h
+MIT notice: source/NVIDIA NVAPI LICENSE.txt.
+
+FORTNITE POTATO GRAPHICS
+Existing recognized sg.* quality groups are set to Low (0). Existing motion
+blur, Nanite and dynamic-resolution keys are disabled. Choose 50, 67, 75 or 100
+percent 3D resolution: 50 is deliberately blurry, while 100 retains native
+render scale. Lower GPU work may help a GPU-limited scene; it need not improve
+a CPU-limited scene. This is a quality/performance tradeoff, not a guaranteed
+FPS increase. Display dimensions, sensitivity, binds and FPS cap are preserved.
+
+Renderer and Reflex are selected in the game, where available. Performance mode
+is not forced with undocumented INI changes. Missing optional graphics keys are
+skipped, and an unambiguous existing render-scale key is required. Backups keep
+original values and file encoding. Reset stops before conflicting later edits.
+Game updates/cloud sync may rewrite configuration; inspect the in-game result.
+
+Epic's supported performance mode and low graphics guidance:
+https://www.epicgames.com/help/c-34254770/c-38015632/a20197720
+https://www.epicgames.com/help/c-202300000001636/c-202300000001719/fix-graphics-problems-in-fortnite-a202300000013484
+Epic's scalability groups and render-scale reference:
+https://dev.epicgames.com/documentation/en-us/unreal-engine/scalability-reference-for-unreal-engine
+
+DEVICE DETECTION
+Present-only Windows PnP mouse/keyboard interfaces are resolved through parent
+device names and grouped by device container. Hotplug and manual refresh update
+the list. Mouse-only Raw Input headers identify the last device sending input
+while KKxtti is open, including while its window is in the background. No key
+presses, pointer coordinates or button contents are collected or logged.
+Composite devices can expose both Mouse and Keyboard interfaces; these are not
+necessarily two separate physical devices. Receiver-only names are kept honest.
+Polling rate, DPI, firmware and actuation cannot be reliably inferred from this
+inventory; use the manufacturer's utility for those settings.
+https://learn.microsoft.com/en-us/powershell/module/pnpdevice/get-pnpdevice
+https://learn.microsoft.com/en-us/windows/win32/inputdev/about-raw-input
+https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerrawinputdevices
+
+RESTORE AND BENCHMARK LIMITS
+Backups now exposes Create restore point and Reset saved tweaks. Windows may
+refuse a restore point because System Protection is disabled or its creation
+frequency limit applies. Success requires observing a newly created point.
+Reset saved tweaks uses reversible journals from this version, newest first.
+It excludes removal, installations, cleanup, decryption and old release folders.
+Restore legacy power/boot snapshots individually in Backups. Conflicts stop Reset
+and report any records already restored. Preserve each release's State folder.
+
+Compare the old and new profiles using repeatable Fortnite/Siege scenes, after
+shader warm-up, with the same graphics/cap and background load. Compare multiple
+runs' slow-frame distribution, GPU load and temperatures. Frame-time CSVs do not
+measure click-to-photon delay. None of these profiles has been live-applied or
+gameplay-benchmarked during the user's study session. See VERIFICATION.txt.
