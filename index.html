@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="FOCS Utility v9.5.0 — a measured, reversible Windows gaming, network diagnostics, and app setup toolkit.">
+  <meta name="description" content="KKxtti 3.3.0 — Windows gaming profiles, registry review and reversible performance comparisons from FOCS Utility.">
   <meta name="theme-color" content="#10091c">
-  <title>FOCS Utility — Measure first. Tune safely.</title>
+  <title>KKxtti 3.3.0 | FOCS Utility</title>
   <style>
     :root {
       color-scheme: dark;
@@ -138,76 +138,93 @@
       .release, footer { align-items: flex-start; flex-direction: column; }
       section { padding: 65px 0; }
     }
+  .install-command { white-space: pre-wrap; overflow-wrap: anywhere; } .hash { overflow-wrap: anywhere; font-size: .8rem; } .download-note { color: var(--muted); margin-top: 22px; } button.button { font: inherit; cursor: pointer; } a:focus-visible, button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
   </style>
 </head>
 <body>
   <div class="shell">
     <nav aria-label="Primary navigation">
-      <a class="brand" href="#top"><span class="mark">F</span> FOCS Utility</a>
-      <div class="nav-links"><a href="#features">Features</a><a href="#safety">Safety</a><a href="#download">Download</a></div>
+      <a class="brand" href="#top"><span class="mark">K</span> KKxtti <small>by FOCS</small></a>
+      <div class="nav-links"><a href="#features">Features</a><a href="#release">What's new</a><a href="#download">Download</a></div>
     </nav>
-
     <main id="top">
       <div class="hero">
         <div>
-          <div class="eyebrow">Windows performance diagnostics · v9.5.0</div>
-          <h1>Measure first.<br><span>Tune safely.</span></h1>
-          <p class="lead">FOCS is a transparent Windows gaming, latency, and network toolkit built around measurable changes, automatic backups, and rollback paths—not mystery “optimization” presets.</p>
+          <div class="eyebrow">Windows 11 utility · New version 3.3.0</div>
+          <h1>Your PC.<br><span>Your settings.</span></h1>
+          <p class="lead">Gaming profiles, performance comparisons and a clear view of your Windows settings. Review each change and return to your saved configuration with Undo.</p>
           <div class="actions">
-            <a class="button primary" href="FOCS_Utility_v9_5_0_HARDENED.bat" download>Download hardened build</a>
-            <a class="button secondary" href="CHANGELOG.md">Read the change log</a>
+            <a class="button primary" href="kkxtti/releases/3.3.0/KKxtti-debloat-utility-3.3.0.zip" download>Download KKxtti 3.3.0</a>
+            <a class="button secondary" href="#download">Open with PowerShell</a>
           </div>
+          <p class="download-note">Windows 11 x64 · Intel / AMD · .NET Framework 4.8 · Windows PowerShell 5.1</p>
         </div>
-        <div class="terminal" aria-label="Example FOCS diagnostic output">
+        <div class="terminal" aria-label="Features included in version 3.3.0">
           <div class="terminal-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-          <pre><span class="prompt">FOCS&gt;</span> loaded-latency --gaming
+          <pre><span class="prompt">KKxtti 3.3.0</span>
 
-Quiet P95          18.0 ms
-Download P95       27.0 ms
-Upload P95         31.0 ms
-Packet loss         0.0 %
+Registry video review     <span class="info">12 values</span>
+Windows controls          <span class="info">104 choices</span>
+MMCSS comparison          <span class="info">Optional</span>
+Previous setting          <span class="ok">Saved for Undo</span>
 
-Gaming gate        <span class="ok">PASS</span>
-Backup             <span class="info">CREATED</span>
-Rollback path      <span class="ok">READY</span>
-
-<span class="prompt">FOCS&gt;</span> _</pre>
+Per-game GPU profiles     Included
+Frame-time comparison     Included
+New in-app review         <span class="ok">Ready</span></pre>
         </div>
       </div>
-
-      <section id="features">
-        <div class="section-heading">
-          <h2>Evidence over folklore.</h2>
-          <p>Benchmark the real machine, preserve the starting state, and keep a change only when the measurements support it.</p>
-        </div>
+      <section id="release">
+        <div class="section-heading"><h2>An audit of every tweak.</h2><p>Version 3.3.0 reviews all 104 controls, adds the video analysis and improves policy accuracy and recovery conflicts.</p></div>
         <div class="grid">
-          <article class="card"><span class="card-num">01 / NETWORK</span><h3>Tail-latency diagnostics</h3><p>Measures idle and loaded P95 latency, packet loss, jitter, gateway behavior, and NIC counters.</p></article>
-          <article class="card"><span class="card-num">02 / GRAPHICS</span><h3>Repeatable A/B benchmarks</h3><p>Uses multi-run PresentMon captures and noise-aware comparisons instead of trusting one lucky run.</p></article>
-          <article class="card"><span class="card-num">03 / SYSTEM</span><h3>Explicit Windows controls</h3><p>Registry, services, power, NVIDIA, AppX, and adapter changes remain visible and independently selectable.</p></article>
-          <article class="card"><span class="card-num">04 / APPS</span><h3>Reviewed app installation</h3><p>Install or update Chromium, Discord, Steam, Epic Games Launcher, and Logitech Onboard Memory Manager through exact WinGet package IDs.</p></article>
+          <article class="card"><span class="card-num">01 / INSPECT</span><h3>See the current values</h3><p>Read 12 registry values on this PC, including their type and review notes. Missing values and read failures are identified without guessing a default.</p></article>
+          <article class="card"><span class="card-num">02 / COMPARE</span><h3>Optional MMCSS experiment</h3><p>Compare a 10% CPU reservation for lower-priority work with 20%. Each change is reviewed and saves the exact previous value for Undo. Restart and benchmark between configurations.</p></article>
+          <article class="card"><span class="card-num">03 / UNDERSTAND</span><h3>Evidence beside the setting</h3><p>Read why unused MMCSS properties, cache hints and blanket timer or DPC recipes are excluded. The comparison is optional and excluded from presets.</p></article>
+          <article class="card"><span class="card-num">04 / MEASURE</span><h3>Use your own game captures</h3><p>Compare repeated frame-time captures and check audio and background responsiveness. These options do not guarantee higher FPS or lower input latency.</p></article>
+        </div>
+        <div class="actions"><a class="button primary" href="audit.html">Read all 104 tweak decisions</a><a class="button secondary" href="kkxtti/CHANGELOG.md">3.3.0 release notes</a><a class="button secondary" href="kkxtti/releases/3.3.0/VIDEO-REVIEW.txt">Read the video review</a></div>
+      </section>
+      <section id="features">
+        <div class="section-heading"><h2>Your existing tools, together.</h2><p>The new review joins KKxtti's gaming, network, setup and recovery tools.</p></div>
+        <div class="grid">
+          <article class="card"><span class="tag">Gaming</span><h3>Profiles for your games</h3><p>Per-game NVIDIA profiles, a custom desktop power plan, and Fortnite graphics choices with saved Reset records.</p></article>
+          <article class="card"><span class="tag">Network</span><h3>Inspect and compare</h3><p>Adapter controls, DNS choices and cancellable ping measurements. Results describe the measured path and workload.</p></article>
+          <article class="card"><span class="tag">Windows</span><h3>Choose each change</h3><p>104 controls include privacy, appearance and compatibility choices. Select optional apps to remove, or use the Chromium, Discord and Epic installer.</p></article>
+          <article class="card"><span class="tag">Recovery</span><h3>Return to saved settings</h3><p>Reversible changes save prior values and check for later edits before restoration. Deleted Recall snapshots, app data and cleaned files cannot be restored by a settings backup.</p></article>
         </div>
       </section>
-
-      <section id="safety">
-        <div class="section-heading">
-          <h2>Built to back out.</h2>
-          <p>The hardened build improves recovery and supply-chain safeguards wherever elevated code or adapter state is involved.</p>
-        </div>
-        <div class="safety">
-          <article class="card"><span class="tag">Recovery</span><h3>Backups before mutation</h3><p>Registry, service, power, and NIC state are captured before relevant changes. Interrupted network tuning now triggers an emergency rollback to the original adapter snapshot.</p></article>
-          <article class="card"><span class="tag">Integrity</span><h3>Verified managed tools</h3><p>Downloads require HTTPS plus a publisher digest or trusted signature. Tool directories are replaced atomically, restoring the previous installation if deployment fails.</p></article>
-        </div>
-      </section>
-
       <section id="download">
         <div class="release">
-          <div><span class="tag">Current release</span><h3>FOCS Utility v9.5.0 Hardened</h3><p>Windows batch launcher with an embedded PowerShell GUI. Administrator access is required.</p></div>
-          <a class="button primary" href="FOCS_Utility_v9_5_0_HARDENED.bat" download>Download .bat</a>
+          <div><span class="tag">Current release · 18 October 2026</span><h3>KKxtti debloat utility 3.3.0</h3><p>Extract the complete ZIP and open KKxtti debloat utility.exe. Source and validation scripts are included.</p></div>
+          <a class="button primary" href="kkxtti/releases/3.3.0/KKxtti-debloat-utility-3.3.0.zip" download>Download .zip</a>
+        </div>
+        <div class="card" style="margin-top: 20px">
+          <h3>Open the latest version from another PC</h3>
+          <p>Run this command in PowerShell on a supported Windows PC. The launcher verifies the versioned package and opens the interface. Administrator actions are selected inside the app.</p>
+          <pre class="install-command"><code id="install-command">irm https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti.ps1 | iex</code></pre>
+          <div class="actions"><button class="button primary" id="copy-command" type="button">Copy command</button><a class="button secondary" href="https://github.com/nxdonyt-creator/FOCS-utility/blob/main/kkxtti.ps1">Inspect launcher</a><a class="button secondary" href="kkxtti/releases/3.3.0/VERIFICATION.txt">Validation details</a></div>
+          <p id="copy-status" aria-live="polite"></p>
+          <p>Each version keeps its own saved history. Keep older release folders and use the version that made a change to undo it before applying overlapping changes.</p>
+          <p class="hash">ZIP SHA-256: <code>79D43956A265A1695046C56E21E05B0484C3F0A9BA8AAE9F56596F97EDDB3EB8</code></p>
+          <p>The application is unsigned. Keep Windows security enabled and review the included source and change prompts.</p>
         </div>
       </section>
+      <section id="legacy">
+        <div class="section-heading"><h2>Previous utilities and releases.</h2><p>Keep access to existing versions and their saved recovery records.</p></div>
+        <div class="actions"><a class="button secondary" href="kkxtti/releases/3.2.0/KKxtti-debloat-utility-3.2.0.zip" download>KKxtti 3.2.0</a><a class="button secondary" href="FOCS_Utility_v9_5_0_HARDENED.bat" download>FOCS v9.5.0 batch utility</a><a class="button secondary" href="https://github.com/nxdonyt-creator/FOCS-utility">Repository</a></div>
+      </section>
     </main>
-
-    <footer><span>FOCS Utility · Windows performance diagnostics</span><span>Review the source and create a restore point before tuning.</span></footer>
+    <footer><span>KKxtti 3.3.0 · FOCS Utility</span><span>Measure changes on the PC and games you use.</span></footer>
   </div>
+  <script>
+    document.getElementById('copy-command').addEventListener('click', async function () {
+      const status = document.getElementById('copy-status');
+      try {
+        await navigator.clipboard.writeText(document.getElementById('install-command').textContent);
+        status.textContent = 'Command copied. Paste it into PowerShell on your Windows PC.';
+      } catch (_) {
+        status.textContent = 'Select and copy the command above; clipboard access is unavailable.';
+      }
+    });
+  </script>
 </body>
 </html>

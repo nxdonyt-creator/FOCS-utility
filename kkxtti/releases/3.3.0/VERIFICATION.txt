@@ -1,0 +1,31 @@
+﻿KKXTTI 3.3.0 VERIFICATION - 18 October 2026
+
+FINAL RELEASE REVIEW
+- Native x64 .NET Framework dashboard compiled successfully after UI changes.
+- 30 PowerShell sources parsed using Windows PowerShell 5.1; JSON catalogs parsed.
+- All 104 control definitions and 20 other tool/profile areas received source
+  and documentation review. See TWEAK AUDIT.html for the decisions and limits.
+- Final ZIP and per-file SHA-256 manifest are generated together. Packaging
+  checks extraction and every file digest using the launcher's integrity logic.
+- No tweak was applied to Windows, drivers, services, DNS or games during this
+  release work. Source/build review is not runtime or performance validation.
+
+EARLIER DEVELOPMENT CHECKS (before final audit corrections)
+372 assertions passed on the earlier 3.3 draft: 24 registry-review checks,
+252 expanded-control checks, 81 launcher checks, 5 WPF construction checks,
+and 10 native identity/preview checks. Registry/network/process I/O in those
+fixtures was mocked. This total does NOT certify the final recovery and policy
+corrections, which have not had a full runtime regression or native click-through.
+Earlier test scripts are included for reproducibility; old reports are history.
+
+PERFORMANCE LIMITS
+No gameplay, thermal, network, audio or end-to-end latency benchmark was run.
+No measured FPS or latency increase is claimed. MMCSS 10% is an optional
+comparison excluded from presets, not a universal recommendation.
+No new antivirus scan or code signing is claimed. The application is unsigned.
+
+RECOVERY LIMITS
+Undo restores recorded configuration, not deleted Recall snapshots, cleaned
+files or removed app data. Conflicts stop recovery; close other settings editors.
+Each release keeps separate local State records. Old version folders remain
+available; use the version that made a change to undo it before overlapping edits.
