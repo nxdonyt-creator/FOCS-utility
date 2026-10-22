@@ -1,3 +1,17 @@
+# KKxtti 3.4.1 — 22 October 2026
+
+## Downloaded ZIP startup repair
+
+- Fixes unsigned-script errors after Explorer extraction that prevented hardware detection and switch readings.
+- Adds embedded hashes for packaged code/data, a one-time trust prompt and narrowly scoped unblocking before backend scripts load. Missing or changed inputs are refused.
+- Honors explicitly configured PowerShell policies; no persistent policy writes. With all scopes undefined, retains the existing RemoteSigned app session. AllSigned/Restricted get an actionable startup message.
+- Rechecks and prepares verified files when the launcher reuses a cache, preserving State.
+- Includes a downloaded-file regression suite and a read-only native WPF smoke check. See the 3.4.1 verification record for completed checks.
+
+The executable remains unsigned. Embedded hashes cannot authenticate a replaced executable or eliminate elevated writable-directory races. No tweaks or gaming performance improvements were applied or measured. Preserve older releases for their own Undo records.
+
+---
+
 # KKxtti 3.4.0 — 22 October 2026
 
 ## NVIDIA potato-profile correction

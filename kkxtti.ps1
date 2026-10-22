@@ -1,6 +1,6 @@
-# KKxtti debloat utility 3.4.0 - inspect this script before remote execution.
+# KKxtti debloat utility 3.4.1 - inspect this script before remote execution.
 # Source and release: https://github.com/nxdonyt-creator/FOCS-utility/tree/main/kkxtti
-# This launcher opens the UI without applying tweaks or requesting elevation.
+# Opens the UI without applying tweaks or requesting elevation.
 & {
  $ErrorActionPreference='Stop'
  Set-StrictMode -Version 2
@@ -117,7 +117,9 @@ function Invoke-KKxttiLauncher([string]$Version,[string]$ArchiveUrl,[string]$Arc
  $rootFull=[IO.Path]::GetFullPath($Root);Assert-KKxttiDirectory $rootFull $rootFull
  $destination=Join-Path $rootFull ($Version+'-'+$ArchiveSha256.Substring(0,12));Assert-KKxttiDirectory $destination $rootFull
  if(Test-Path -LiteralPath $destination){
-  $null=Test-KKxttiRelease $destination $ManifestSha256
+  $rows=@(Test-KKxttiRelease $destination $ManifestSha256)
+  foreach($row in $rows){Unblock-File -LiteralPath (Join-Path $destination $row.Relative) -ErrorAction Stop}
+  Unblock-File -LiteralPath (Join-Path $destination 'SHA256SUMS.txt') -ErrorAction Stop
   Write-Host ('Opening verified cached KKxtti '+$Version+'. Saved changes remain available.')
  }else{
   [void][IO.Directory]::CreateDirectory($rootFull)
@@ -129,8 +131,8 @@ function Invoke-KKxttiLauncher([string]$Version,[string]$ArchiveUrl,[string]$Arc
   $prepared=Join-Path $download 'prepared';Expand-KKxttiPackage $archive $prepared
   $rows=@(Test-KKxttiRelease $prepared $ManifestSha256)
   # Unblock only the verified release files, never the user's other downloads.
-  foreach($row in $rows){Unblock-File -LiteralPath (Join-Path $prepared $row.Relative)}
-  Unblock-File -LiteralPath (Join-Path $prepared 'SHA256SUMS.txt')
+  foreach($row in $rows){Unblock-File -LiteralPath (Join-Path $prepared $row.Relative) -ErrorAction Stop}
+  Unblock-File -LiteralPath (Join-Path $prepared 'SHA256SUMS.txt') -ErrorAction Stop
   Assert-KKxttiDirectory $prepared $rootFull;Assert-KKxttiDirectory $destination $rootFull
   if(Test-Path -LiteralPath $destination){$null=Test-KKxttiRelease $destination $ManifestSha256}
   else{Move-Item -LiteralPath $prepared -Destination $destination -ErrorAction Stop}
@@ -142,5 +144,5 @@ function Invoke-KKxttiLauncher([string]$Version,[string]$ArchiveUrl,[string]$Arc
  $destination
 }
 
- Invoke-KKxttiLauncher -Version '3.4.0' -ArchiveUrl 'https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti/releases/3.4.0/KKxtti-debloat-utility-3.4.0.zip' -ArchiveSha256 'F7B2C4142F686632F3280AC2326045960470CFC007B15EFCDBB1FA2FC964B12B' -ManifestSha256 '3655EDF7F70775BB6371D7CFBE854129ED443E13A5146BD2F4B7D3ED38CCBA22'
+ Invoke-KKxttiLauncher -Version '3.4.1' -ArchiveUrl 'https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti/releases/3.4.1/KKxtti-debloat-utility-3.4.1.zip' -ArchiveSha256 '5B3BB174816093382B02273CF4DAD33E799B8514F7C2BA1B933C5FD9B35EE147' -ManifestSha256 'ACF9DEAD47189555F62589E36EC1AA1A14F4AB8564C5AAFE73CA8EC1A840CA9B'
 }

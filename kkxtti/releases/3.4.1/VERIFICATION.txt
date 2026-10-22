@@ -1,0 +1,38 @@
+﻿KKXTTI 3.4.1 VERIFICATION - 22 October 2026
+
+COMPLETED CHECKS
+- Native x64 .NET Framework 4.8 dashboard compiled from included source.
+- 32 PowerShell files parsed with Windows PowerShell 5.1.
+- 2 JSON files parsed.
+- 33 startup regression checks passed: real NTFS Internet markers reproduce
+  the unsigned-script failure; trust refusal/acceptance; modified/missing
+  inputs; changes during confirmation; repeat startup; State exclusion;
+  policy refusal; actual read-only hardware and all 104 switch queries.
+- 10 native WPF checks passed: CPU/GPU/power/peripheral labels, all 104 switches,
+  completed activity status, no startup error dialog, preview guard, rendering.
+  UI navigation runs through the WPF dispatcher in a read-only session.
+- 82 launcher fixture checks passed, including fresh download/cache verification,
+  exact-file unblocking, State preservation, tampered files and invalid ZIPs.
+  Downloads/process starts in the fixture suite were mocked.
+- Final ZIP extraction and complete file inventory verified with SHA-256.
+
+SCOPE AND LIMITS
+Tests ran on this development Windows PC, not a clean-VM/device matrix.
+The app remains unsigned. Embedded hashes detect changes relative to the
+executable; they do not authenticate a replaced executable or close all races
+in writable elevated-code directories. No signing, fresh AV scan, gaming/FPS/
+latency measurements, actual tweak Apply/Undo, or managed-domain deployment test.
+AllSigned/Restricted refusal branches were checked; organizational policy was
+not changed. Other historical suites in source were not rerun for this patch.
+Only named scratch package files and their download markers were changed by
+tests. Hardware, peripherals, active plan and Windows controls were read-only.
+Persistent execution policies, Windows/game/NVIDIA/network settings and user
+State were not changed by this release work.
+
+STARTUP
+On Internet-marked ZIP extraction, verify embedded code/data hashes, ask for
+trust, reverify after confirmation, unblock only verified package inputs,
+then load engines. Missing/modified inputs stop before unblocking.
+Explicit configured policies are honored. With every scope undefined, retain
+RemoteSigned in the app session. No persistent policy writes or Bypass mode.
+Keep old release folders for their own Undo; State migration remains planned.

@@ -1,0 +1,39 @@
+3.4.1 STARTUP UPDATE
+The Internet-marker startup failure is fixed for intact packages after the
+user accepts the package-specific trust prompt. This is an unsigned release;
+AllSigned and explicitly configured Restricted remain unsupported. Managed
+policy is not overridden. Local writable folders are required; linked paths
+and UNC paths are refused. No gameplay performance improvement is claimed.
+The following 3.4 engineering limits otherwise still apply.
+
+﻿KKXTTI 3.4.0 — KNOWN ISSUES AND VALIDATION LIMITS
+22 October 2026
+
+This release corrects the NVIDIA potato-profile feature and two direct preview
+write routes. It does not implement the full engineering roadmap.
+
+- NVIDIA texture overrides are experimental. Current Fortnite DX12 can ignore
+  them. Saved profile readback is not proof of changed visuals, FPS or latency.
+- No GPU profile, Windows setting, game configuration, app removal or encryption
+  change was applied during this release work. No runtime/regression/gameplay
+  tests or fresh antivirus scan were performed.
+- The application is unsigned. The mutable remote launcher contains its own
+  hash pins; these protect package consistency, not against a compromised
+  launcher/repository. Cached code is user-writable; use a trusted unmodified
+  package and keep Windows protections enabled.
+- Restarting with another administrator account changes the process user.
+  Account-specific settings, app inventory and game paths can target that
+  account. Use the original unelevated account for user operations.
+- Legacy automatic BCD Undo lacks complete newer-value conflict checks.
+  Preserve backups and use a recovery-aware manual comparison for boot state.
+- Recall policy rollback can reassert a snapshot-deletion setting. Configuration
+  recovery cannot restore deleted snapshots; avoid combining Recall changes
+  with other operations until the central destructive-write gate is complete.
+- Per-release State remains separate. Use the original version to inspect or
+  undo its changes. Do not delete earlier folders or apply overlapping changes
+  assuming their history migrated.
+- Common journal locking/durability, all-row recovery verification, managed
+  policy detection and per-build effective-state validation remain planned.
+- The full report supplies 104 control decisions, 19 findings, eight example
+  patches and a prioritized implementation plan. Proposals are not shipped
+  features. Read https://nxdonyt-creator.github.io/FOCS-utility/review.html

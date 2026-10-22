@@ -1,0 +1,90 @@
+STARTUP POLICY REFERENCES (3.4.1)
+Microsoft PowerShell 5.1 execution-policy scopes, RemoteSigned, file unblocking:
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-5.1
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.security/unblock-file?view=powershell-5.1
+
+﻿KKXTTI 3.4.0 - NVIDIA POTATO TEXTURE PROFILE
+Research reviewed: 22 October 2026
+
+CORRECTION
+The 3.2/3.3 Games page called an INI graphics editor "Potato". That changed
+Fortnite scalability/render scale, not its NVIDIA driver profile.
+The main Potato card now writes four settings through NVIDIA's DRS API into
+the existing Fortnite application profile. Profile Inspector is a user
+interface for those driver profiles; it does not need to be open.
+
+EXACT TARGETS
+Setting                                 ID           Target
+Texture filtering - LOD bias (DX)        0x00738E8F   +1.5: 12 / 0x0C
+                                                     +3.0: 24 / 0x18
+Texture filtering quality               0x00CE2691   20 / high performance
+Anisotropic filtering mode              0x10D2BB16   1 / user override
+Anisotropic filtering level             0x101E61A9   1 / linear, 1x
+
+NVIDIA's public NVAPI header supplies these IDs and enum values. The upstream
+Profile Inspector XML maps Direct3D LOD values in steps of 1/8: +3.0000 is
+0x18. It is NOT the IEEE floating-point bit pattern 0x40400000.
+Positive mip bias requests less detailed texture levels. This changes texture
+sampling, not mesh geometry, collision or the game's render resolution.
+The preset offers +1.5 and +3.0, within the upstream UI's named positive range.
+It is an experiment, not a proven fastest preset.
+
+CURRENT FORTNITE LIMITATION
+Epic's current support page says the DirectX 11 option was removed from
+Rendering Mode. Current Performance mode also uses DirectX 12.
+Microsoft documents that a D3D12 application's sampler specifies MipLODBias.
+Neither that API document nor the NVAPI ID list guarantees that a driver
+override changes current Fortnite's rendered output. Treat support as
+unverified until you compare screenshots from the same scene on your driver.
+Do not assume a successful profile readback proves potato visuals or more FPS.
+No renderer switch or launch-argument change is part of this update.
+
+WHAT THE BUTTON DOES
+Games > NVIDIA driver profile > Inspect, choose +1.5 or +3.0, then Apply.
+The review lists all four targets. The engine requires administrator access,
+a closed Fortnite process and an existing NVIDIA Fortnite profile. It rechecks
+profile identity and original values after confirmation, saves original local
+overrides/inheritance, writes the settings, saves DRS and reads them back.
+Its allowlist adds only the three new texture-setting IDs to the existing
+bridge; texture quality was already supported.
+It does not edit GameUserSettings.ini, render scale, sensitivity, V-Sync,
+power management, FPS caps, the global NVIDIA profile or other games.
+
+RESET
+The NVIDIA Potato Reset selects the latest potato record for Fortnite.
+Competitive NVIDIA Reset selects only competitive records. Journals now store
+the preset and LOD strength; older NVIDIA records without these fields are
+treated as competitive. Restoration checks the allowed target values and
+refuses conflicting newer edits. Originally inherited values are restored by
+removing the utility's local override, not by forcing an old global value.
+Use Backups for individual/interrupted records. Reset all still uses the
+same NVIDIA recovery path.
+Keep other NVIDIA profile editors closed; DRS database writes are not an
+atomic lock against another writer.
+
+OLD IN-GAME CONTROLS
+The original editor remains under "Optional: Fortnite in-game graphics
+settings", labeled "In-game low graphics" with its own Apply and Reset.
+Those changes are independent of NVIDIA Potato. If 3.3 changed your in-game
+settings, restore that record using your 3.3 copy and its State folder.
+Installing 3.4 does not undo earlier edits or migrate their history.
+
+SOURCES
+NVIDIA public NVAPI IDs/enums, commit 70d337db9186e968eab622f7e786de7e437faf3d:
+https://github.com/NVIDIA/nvapi/blob/70d337db9186e968eab622f7e786de7e437faf3d/NvApiDriverSettings.h
+Upstream NVIDIA Profile Inspector labels/encoding, commit 2994194abe61f6807a3ea2015cdd875f6e1fc67b:
+https://github.com/Orbmu2k/nvidiaProfileInspector/blob/2994194abe61f6807a3ea2015cdd875f6e1fc67b/nvidiaProfileInspector/CustomSettingNames.xml
+NVIDIA filtering controls:
+https://www.nvidia.com/content/Control-Panel-Help/vLatest/en-us/mergedProjects/nv3d/Manage_3D_Settings_(reference).htm
+Microsoft mip bias and sampler semantics:
+https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_sampler_desc
+Epic current DX11 removal notice:
+https://www.epicgames.com/help/c-34254770/c-33726977/a25166658
+Epic current rendering options:
+https://www.epicgames.com/help/c-34254770/c-38015632/my-rendering-mode-option-in-fortnite-was-not-saved-a22616652
+
+VALIDATION LIMIT
+Compiled and source-reviewed. No driver profile was applied to this PC and no
+new automated/runtime tests, game screenshots, FPS or latency measurements
+were performed for this update. Compare the actual visual result before
+keeping the profile.
