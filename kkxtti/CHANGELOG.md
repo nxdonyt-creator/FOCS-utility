@@ -1,3 +1,26 @@
+# KKxtti 3.4.0 — 22 October 2026
+
+## NVIDIA potato-profile correction
+
+- The main Potato action now writes four allowlisted texture settings to the existing Fortnite NVIDIA DRS application profile: LOD +1.5 or +3.0, high-performance filtering and 1x anisotropic override.
+- Inspect, reviewed Apply, saved original overrides/inheritance and potato-specific Reset are included. Competitive Reset remains separate.
+- The INI editor is clearly labelled In-game low graphics in an optional section.
+- Current Fortnite DX12 may ignore these driver overrides. Saved values do not prove changed visuals or an FPS/latency gain.
+
+## Limited audit fixes
+
+- Direct control Apply/Undo and NIC Apply/Undo now reject read-only preview.
+- Updated the manifest version and generated 104-control inventory; labelled historical tests and reference-PC guidance.
+- Published the deep engineering review with 19 findings, all 104 controls, schemas, eight example patches, release and measurement plans.
+
+## Validation and remaining work
+
+Compiled the native x64 dashboard; parsed PowerShell and JSON; verified the packaged extraction and file hashes. No new test suites, GPU changes, gameplay measurements, fresh AV scan or signing. State v2, signing, boot/Recall recovery and the broader roadmap remain proposed. Read the known issues before using administrative operations.
+
+See [engineering review](https://nxdonyt-creator.github.io/FOCS-utility/review.html), [NVIDIA research](https://nxdonyt-creator.github.io/FOCS-utility/kkxtti/releases/3.4.0/SOURCES.txt) and [validation](https://nxdonyt-creator.github.io/FOCS-utility/kkxtti/releases/3.4.0/VERIFICATION.txt).
+
+---
+
 # KKxtti 3.3.0 — 18 October 2026
 
 ## Performance review and correctness

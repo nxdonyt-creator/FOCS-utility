@@ -1,0 +1,67 @@
+KKXTTI 3.3.0 - REGISTRY VIDEO REVIEW
+18 October 2026
+Video: https://www.youtube.com/watch?v=U-U4TLAuYbU
+Synez: NEW Registry Tweaks (2026) - More FPS & Lower Latency!
+Recommendations identified from the available transcript; technical conclusions
+below were checked against Microsoft documentation. No gameplay gain is claimed.
+
+INCLUDED IN THE APP
+Performance now contains an inspection of 12 relevant registry values and a
+separate, optional MMCSS scheduling comparison. Inspection is read-only. A
+missing value does not mean the PC is misconfigured. Unknown and unreadable
+values are displayed without guessing a default.
+
+The MMCSS control writes only SystemResponsiveness: On = 10, Off = 20, decimal.
+These are comparison choices. Off is not a restore of your previous settings;
+Undo in Backups restores the saved value, type or absence. Admin review is
+required. Restart manually between configurations and capture the same game
+scene, including normal audio and background activity. Reduced CPU reservation
+can affect background work. Stop the experiment if other workloads regress.
+This setting is excluded from Gaming essentials and the other presets.
+
+WHAT THE DOCUMENTATION SUPPORTS
+MMCSS affects participating multimedia threads. Its SystemResponsiveness value
+controls the reservation for lower-priority work. Values below 10 map to 20;
+zero therefore does not give all CPU time to the game. GPU Priority and SFIO
+Priority are documented as unused, and High scheduling category treats Priority
+as 2. The old Clock Rate guarantee was removed starting with Windows 7.
+https://learn.microsoft.com/en-us/windows/win32/procthread/multimedia-class-scheduler-service
+
+ThreadDpcEnable=0 converts threaded DPCs to ordinary DPCs. Ordinary DPCs can
+delay threads and increase latency; this does not justify a global gaming tweak.
+https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/introduction-to-threaded-dpcs
+
+Service separation provides reliability and isolation. Fewer svchost processes
+alone do not establish improved frame times.
+https://learn.microsoft.com/en-us/windows/application-management/svchost-service-refactoring
+
+Microsoft's tracing documentation discusses DisablePagingExecutive for Windows
+7/Vista x64 stack walking and says that tracing prerequisite is unnecessary on
+Windows 8+. This is not evidence that the setting has no other effect, or that
+it improves Windows 11 gaming.
+https://learn.microsoft.com/en-us/windows-hardware/test/wpt/kernel-trace-control-api-reference
+
+EXCLUDED RECOMMENDATIONS
+This review did not establish modern gaming benefits for LargeSystemCache,
+SecondLevelDataCache, ThirdLevelDataCache or NetworkThrottlingIndex. The earlier
+draft incorrectly used a 32-bit memory-limit reference to judge cache hints;
+that reference describes different values and is not evidence for this claim.
+Keep these existing values unless investigating a specific documented issue.
+
+The video also covers foreground scheduling, hibernation, timer coalescing,
+debug/watchdog parameters and disabling kernel exception protection. No blanket
+timer, watchdog or security-disabling profile is added. Hibernation already has
+its own reviewed System tools action; disabling it is not a measured FPS gain.
+
+HOW TO DECIDE WHETHER TO KEEP A CHANGE
+Use the existing Benchmarks page and BENCHMARK GUIDE.txt. Warm shaders, keep the
+same scene and capture multiple runs before and after one change. Compare p99
+frame time, slow frames and repeatability; record audio/background regressions.
+Restore your saved setting when there is no repeatable benefit. Frame times,
+network RTT and click-to-display latency are different measurements. Actual
+latency improvement must be measured with appropriate game or hardware support.
+
+UPDATE AND RECOVERY
+Version 3.3.0 has its own cache folder. Existing versions and their State folders
+remain available. Restore changes made in 3.2 from 3.2 before experimenting with
+overlapping settings in 3.3. The launcher never merges or discards old journals.

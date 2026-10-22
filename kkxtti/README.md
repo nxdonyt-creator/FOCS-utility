@@ -1,34 +1,29 @@
-# KKxtti debloat utility 3.3.0
+# KKxtti debloat utility 3.4.0
 
-[Open the download webpage](https://nxdonyt-creator.github.io/FOCS-utility/) · [Read the complete tweak audit](https://nxdonyt-creator.github.io/FOCS-utility/audit.html)
+[Download webpage](https://nxdonyt-creator.github.io/FOCS-utility/) · [Engineering review](https://nxdonyt-creator.github.io/FOCS-utility/review.html) · [104-control inventory](https://nxdonyt-creator.github.io/FOCS-utility/audit.html)
 
-A native Windows utility with 104 reviewed registry controls, game profiles, frame-time comparisons, network tools and saved configuration recovery. Most controls are preferences; no universal FPS or latency gain is claimed.
+## New in 3.4.0
 
-## Open on another computer
+The Potato page now edits the existing Fortnite NVIDIA driver profile, with LOD +1.5/+3.0 choices, filtering settings, Inspect and separate Reset. The in-game INI editor is labelled separately. Current Fortnite DX12 may ignore the driver overrides: no changed visuals, FPS or latency gain is promised.
 
-On Windows 11 x64 (Intel/AMD), run:
+Two direct preview mutation routes are guarded. The deep review includes 19 findings, all 104 controls, state/catalog schemas, eight example patches and a prioritized plan. The broader roadmap is not implemented in this release.
 
-```powershell
+## Download
+
+[Download the complete 3.4.0 ZIP](https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti/releases/3.4.0/KKxtti-debloat-utility-3.4.0.zip). Extract all files together. Windows 11 x64 Intel/AMD, .NET Framework 4.8 and Windows PowerShell 5.1 are required. ARM64 is unsupported.
+
+The application is unsigned. [Validation limits](https://nxdonyt-creator.github.io/FOCS-utility/kkxtti/releases/3.4.0/VERIFICATION.txt) · [Known issues](https://nxdonyt-creator.github.io/FOCS-utility/kkxtti/releases/3.4.0/KNOWN-ISSUES.txt).
+
+ZIP SHA-256: F7B2C4142F686632F3280AC2326045960470CFC007B15EFCDBB1FA2FC964B12B
+
+## Optional PowerShell launcher
+
+Inspect the launcher before running it. It checks pinned package/file hashes; the pins are inside the mutable launcher and do not authenticate a compromised launcher itself.
+
+~~~powershell
 irm https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti.ps1 | iex
-```
+~~~
 
-The launcher verifies the versioned ZIP and every packaged file against pinned SHA-256 values before opening the interface. Opening applies no tweaks. Requirements: .NET Framework 4.8 and Windows PowerShell 5.1. The launcher also works from PowerShell 7 on supported Windows. ARM64 and Windows 10 are not supported.
+Opening applies no tweaks. Each release keeps separate State records under its cached version folder. Preserve older versions and use the version that made a change for its Undo before overlapping edits. Settings recovery cannot restore deleted Recall snapshots, removed app data or cleaned files.
 
-## New in 3.3.0
-
-- Read-only inspection of 12 registry values from the supplied video.
-- Optional MMCSS 10%/20% comparison, with exact saved-state Undo.
-- Searchable audit of every control and the other tool areas.
-- Correct Recall deletion confirmation, policy scope and eligibility.
-- Better conflict handling for registry, system, network, DNS and power recovery.
-- [Release notes](CHANGELOG.md) and [validation limits](releases/3.3.0/VERIFICATION.txt).
-
-## Downloads and recovery
-
-[Download 3.3.0](https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti/releases/3.3.0/KKxtti-debloat-utility-3.3.0.zip). Extract the complete archive; keep the source, engine files and executable together. The executable is unsigned.
-
-ZIP SHA-256: `79D43956A265A1695046C56E21E05B0484C3F0A9BA8AAE9F56596F97EDDB3EB8`
-
-The launcher caches each version under `%LOCALAPPDATA%\KKxtti\Releases\<version>-<hash-prefix>`. Keep earlier release folders and their State records. Use the version that made a change to undo it before applying overlapping changes. Undo restores recorded configuration; it cannot restore deleted Recall snapshots, removed app data or cleaned files.
-
-[Version 3.2.0](releases/3.2.0/KKxtti-debloat-utility-3.2.0.zip) remains available. The legacy FOCS batch utility is a separate download and is outside this audit.
+[Previous 3.3.0 ZIP](https://raw.githubusercontent.com/nxdonyt-creator/FOCS-utility/main/kkxtti/releases/3.3.0/KKxtti-debloat-utility-3.3.0.zip) remains available. The legacy FOCS batch utility is separate and outside this audit.

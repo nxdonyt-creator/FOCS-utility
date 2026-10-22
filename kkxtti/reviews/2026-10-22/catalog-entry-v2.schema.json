@@ -1,0 +1,565 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KKxtti proposed catalog entry v2",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "operationVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "category": {
+      "enum": [
+        "Gaming",
+        "Privacy",
+        "Desktop",
+        "System",
+        "Network",
+        "Browsers",
+        "Accessibility"
+      ]
+    },
+    "intent": {
+      "enum": [
+        "preference",
+        "troubleshooting",
+        "experiment"
+      ]
+    },
+    "risk": {
+      "enum": [
+        "Low",
+        "Medium",
+        "High"
+      ]
+    },
+    "scope": {
+      "enum": [
+        "initiating-user",
+        "device",
+        "logon-desktop"
+      ]
+    },
+    "requiresAdmin": {
+      "type": "boolean"
+    },
+    "destructive": {
+      "type": "boolean"
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "windowsBranches": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "24H2",
+              "25H2",
+              "26H1",
+              "26H2"
+            ]
+          }
+        },
+        "buildRanges": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 22000
+              },
+              "max": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 22000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "minUbr": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "min",
+              "max",
+              "minUbr"
+            ]
+          }
+        },
+        "editions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "architectures": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "x64"
+            ]
+          }
+        },
+        "requiredCapabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9.-]+$"
+          }
+        },
+        "application": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "detectorId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "minimumVersion": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "detectorId",
+                "minimumVersion"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unknownCapability": {
+          "const": "block"
+        }
+      },
+      "required": [
+        "windowsBranches",
+        "buildRanges",
+        "editions",
+        "architectures",
+        "requiredCapabilities",
+        "application",
+        "unknownCapability"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "class": {
+            "enum": [
+              "documented-contract",
+              "documented-feature",
+              "measurement",
+              "reference-implementation",
+              "inference",
+              "unverified"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "supportingSection": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "publishedOrUpdated": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "accessed": {
+            "type": "string",
+            "format": "date"
+          },
+          "confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          }
+        },
+        "required": [
+          "class",
+          "url",
+          "supportingSection",
+          "publishedOrUpdated",
+          "accessed",
+          "confidence"
+        ]
+      }
+    },
+    "managedPolicy": {
+      "enum": [
+        "block-if-managed",
+        "not-policy",
+        "unknown-block"
+      ]
+    },
+    "effectiveDetectorId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9.-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refresh": {
+      "enum": [
+        "immediate",
+        "application-restart",
+        "explorer-restart",
+        "sign-out",
+        "reboot",
+        "unknown"
+      ]
+    },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      }
+    },
+    "defaultSelected": {
+      "const": false
+    },
+    "mutations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "resourceTemplate": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "hive": {
+                "enum": [
+                  "HKLM",
+                  "HKCU",
+                  "HKU.Default"
+                ]
+              },
+              "view": {
+                "const": "Registry64"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 16383
+              }
+            },
+            "required": [
+              "hive",
+              "view",
+              "path",
+              "name"
+            ]
+          },
+          "on": {
+            "$ref": "#/$defs/action"
+          },
+          "off": {
+            "$ref": "#/$defs/action"
+          },
+          "ownedMask": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(0|[1-9][0-9]*)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "resourceTemplate",
+          "on",
+          "off",
+          "ownedMask"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "operationVersion",
+    "name",
+    "category",
+    "intent",
+    "risk",
+    "scope",
+    "requiresAdmin",
+    "destructive",
+    "applicability",
+    "evidence",
+    "managedPolicy",
+    "effectiveDetectorId",
+    "refresh",
+    "dependencies",
+    "conflicts",
+    "defaultSelected",
+    "mutations"
+  ],
+  "$defs": {
+    "value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": false
+            }
+          },
+          "required": [
+            "present"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "enum": [
+                "DWord",
+                "QWord"
+              ]
+            },
+            "data": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "enum": [
+                "String",
+                "ExpandString"
+              ]
+            },
+            "data": {
+              "type": "string",
+              "maxLength": 1048576
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "const": "MultiString"
+            },
+            "data": {
+              "type": "array",
+              "maxItems": 65536,
+              "items": {
+                "type": "string",
+                "maxLength": 1048576
+              }
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "const": "Binary"
+            },
+            "data": {
+              "type": "string",
+              "contentEncoding": "base64",
+              "maxLength": 1398104
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "const": "JsonSnapshot"
+            },
+            "data": {
+              "type": "string",
+              "contentMediaType": "application/json",
+              "maxLength": 1048576
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    },
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "delete"
+            }
+          },
+          "required": [
+            "op"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "const": "set"
+            },
+            "value": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/value"
+                },
+                {
+                  "properties": {
+                    "present": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "present"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "op",
+            "value"
+          ]
+        }
+      ]
+    }
+  }
+}

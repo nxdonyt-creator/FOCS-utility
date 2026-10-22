@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proposed declarative profile; imports always require a fresh local diff",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "createdUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "catalogSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "controls": {
+      "type": "array",
+      "maxItems": 104,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "operationVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "desired": {
+            "enum": [
+              "on",
+              "off"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "operationVersion",
+          "desired"
+        ]
+      }
+    },
+    "machineBinding": {
+      "enum": [
+        "portable-preferences",
+        "this-device"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 4096
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "name",
+    "createdUtc",
+    "catalogSha256",
+    "controls",
+    "machineBinding",
+    "notes"
+  ]
+}

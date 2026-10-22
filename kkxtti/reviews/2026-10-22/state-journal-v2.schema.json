@@ -1,0 +1,730 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KKxtti proposed state journal v2",
+  "description": "Design artifact. Not loaded by 3.3 or 3.4. Schema validation supplements trusted operation-specific semantic checks.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "transactionId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "previousPayloadSha256": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operationId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{0,127}$"
+        },
+        "operationVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "productVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "engineSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "catalogSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "createdUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "installationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "machineFingerprint": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "initiatingSid": {
+              "type": "string",
+              "pattern": "^S-1-[0-9]+(?:-[0-9]+)+$"
+            },
+            "executingSid": {
+              "type": "string",
+              "pattern": "^S-1-[0-9]+(?:-[0-9]+)+$"
+            },
+            "sessionId": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "installationId",
+            "machineFingerprint",
+            "initiatingSid",
+            "executingSid",
+            "sessionId"
+          ]
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "osBuild": {
+              "type": "integer",
+              "minimum": 22000
+            },
+            "ubr": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "edition": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "architecture": {
+              "const": "x64"
+            }
+          },
+          "required": [
+            "osBuild",
+            "ubr",
+            "edition",
+            "architecture"
+          ]
+        },
+        "status": {
+          "enum": [
+            "Prepared",
+            "Applying",
+            "Applied",
+            "Compensating",
+            "PartiallyApplied",
+            "Undoing",
+            "Undone",
+            "Conflict",
+            "NeedsReview"
+          ]
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "rowId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "resource": {
+                "$ref": "#/$defs/resource"
+              },
+              "before": {
+                "$ref": "#/$defs/value"
+              },
+              "target": {
+                "$ref": "#/$defs/value"
+              },
+              "observedAfter": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/value"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ownedMask": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]*)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "state": {
+                "enum": [
+                  "Prepared",
+                  "Written",
+                  "Verified",
+                  "Restored",
+                  "Conflict",
+                  "Unknown"
+                ]
+              },
+              "irreversible": {
+                "type": "boolean"
+              },
+              "dataLossAcknowledgment": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "scope": {
+                        "const": "this-row-only"
+                      },
+                      "acknowledgedUtc": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "userSid": {
+                        "type": "string",
+                        "pattern": "^S-1-[0-9]+(?:-[0-9]+)+$"
+                      }
+                    },
+                    "required": [
+                      "scope",
+                      "acknowledgedUtc",
+                      "userSid"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "lastError": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096
+                      },
+                      "message": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4096
+                      }
+                    },
+                    "required": [
+                      "code",
+                      "message"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "rowId",
+              "resource",
+              "before",
+              "target",
+              "observedAfter",
+              "ownedMask",
+              "state",
+              "irreversible",
+              "dataLossAcknowledgment",
+              "lastError"
+            ]
+          }
+        }
+      },
+      "required": [
+        "operationId",
+        "operationVersion",
+        "productVersion",
+        "engineSha256",
+        "catalogSha256",
+        "createdUtc",
+        "updatedUtc",
+        "identity",
+        "environment",
+        "status",
+        "rows"
+      ]
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "enum": [
+            "sha256",
+            "hmac-sha256"
+          ]
+        },
+        "canonicalization": {
+          "const": "RFC8785"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "keyId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "algorithm",
+        "canonicalization",
+        "digest",
+        "keyId"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "transactionId",
+    "revision",
+    "previousPayloadSha256",
+    "payload",
+    "integrity"
+  ],
+  "$defs": {
+    "resource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "registry"
+            },
+            "hive": {
+              "enum": [
+                "HKLM",
+                "HKU"
+              ]
+            },
+            "sid": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^S-1-[0-9]+(?:-[0-9]+)+$"
+                },
+                {
+                  "type": "null"
+                },
+                {
+                  "const": ".DEFAULT"
+                }
+              ]
+            },
+            "view": {
+              "const": "Registry64"
+            },
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 16383
+            }
+          },
+          "required": [
+            "kind",
+            "hive",
+            "sid",
+            "view",
+            "path",
+            "name"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "file"
+            },
+            "rootId": {
+              "enum": [
+                "FortniteLocal",
+                "SiegeDocuments"
+              ]
+            },
+            "relativePath": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "volumeId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "fileId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "kind",
+            "rootId",
+            "relativePath",
+            "volumeId",
+            "fileId"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "dns"
+            },
+            "interfaceGuid": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "family": {
+              "enum": [
+                "IPv4",
+                "IPv6"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "interfaceGuid",
+            "family"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "nic"
+            },
+            "interfaceGuid": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "pnpInstanceId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "registryKeyword": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "kind",
+            "interfaceGuid",
+            "pnpInstanceId",
+            "registryKeyword"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "power"
+            },
+            "schemeGuid": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "subgroupGuid": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "settingGuid": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "source": {
+              "enum": [
+                "AC",
+                "DC"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "schemeGuid",
+            "subgroupGuid",
+            "settingGuid",
+            "source"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "nvidia"
+            },
+            "profileName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "applicationNames": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              }
+            },
+            "settingId": {
+              "type": "string",
+              "pattern": "^0x[0-9A-F]{8}$"
+            }
+          },
+          "required": [
+            "kind",
+            "profileName",
+            "applicationNames",
+            "settingId"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "bcd"
+            },
+            "storeId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "objectGuid": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "element": {
+              "enum": [
+                "useplatformclock",
+                "useplatformtick",
+                "disabledynamictick"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "storeId",
+            "objectGuid",
+            "element"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "appx"
+            },
+            "userSid": {
+              "type": "string",
+              "pattern": "^S-1-[0-9]+(?:-[0-9]+)+$"
+            },
+            "packageFullName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "packageFamilyName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "kind",
+            "userSid",
+            "packageFullName",
+            "packageFamilyName"
+          ]
+        }
+      ]
+    },
+    "value": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": false
+            }
+          },
+          "required": [
+            "present"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "enum": [
+                "DWord",
+                "QWord"
+              ]
+            },
+            "data": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "enum": [
+                "String",
+                "ExpandString"
+              ]
+            },
+            "data": {
+              "type": "string",
+              "maxLength": 1048576
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "const": "MultiString"
+            },
+            "data": {
+              "type": "array",
+              "maxItems": 65536,
+              "items": {
+                "type": "string",
+                "maxLength": 1048576
+              }
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "const": "Binary"
+            },
+            "data": {
+              "type": "string",
+              "contentEncoding": "base64",
+              "maxLength": 1398104
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "present": {
+              "const": true
+            },
+            "kind": {
+              "const": "JsonSnapshot"
+            },
+            "data": {
+              "type": "string",
+              "contentMediaType": "application/json",
+              "maxLength": 1048576
+            }
+          },
+          "required": [
+            "present",
+            "kind",
+            "data"
+          ]
+        }
+      ]
+    }
+  }
+}

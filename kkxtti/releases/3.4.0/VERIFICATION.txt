@@ -1,0 +1,33 @@
+﻿KKXTTI 3.4.0 VERIFICATION — 22 October 2026
+
+ACTUAL CHECKS
+- Native x64 .NET Framework dashboard compiled successfully from included source.
+- 30 PowerShell files parsed with Windows PowerShell 5.1.
+- 2 JSON files parsed.
+- Final ZIP uses forward-slash names and the complete per-file SHA-256 manifest.
+- Launcher extraction/inventory/hash logic checked the completed archive in a
+  fresh scratch directory without opening the application.
+- Source reviewed the NVIDIA profile mapping, inheritance recovery, preset
+  separation and direct preview guards. See SOURCES 3.4.txt and known issues.
+
+NOT PERFORMED
+No new unit/regression/UI test suites, clean-VM integration, game screenshots,
+FPS/latency/thermal measurements, GPU profile application, fresh antivirus scan
+or code signing. No Windows/game/driver/app/encryption settings were changed.
+Historical checks in earlier documents do not certify this release.
+
+SCOPE
+The main Potato action writes four settings in the existing Fortnite NVIDIA
+profile. The separate in-game low-graphics editor remains optional.
+Current Fortnite DX12 may ignore texture overrides. Readback establishes
+saved driver settings only, not the visual effect or a performance gain.
+Direct control and NIC Apply/Undo routes now reject read-only preview.
+The full deep-review roadmap is not implemented in this release.
+
+REMAINING LIMITS
+Unsigned application; mutable launcher pins and user-writable cached code;
+alternate-account elevation changes HKCU/app/game context; legacy BCD Undo
+and Recall compensation need additional safeguards; journal consistency and
+effective-state validation remain planned. Read KNOWN ISSUES 3.4.txt.
+Each release keeps separate State. Preserve old copies for their own Undo.
+Settings recovery cannot restore deleted snapshots, app data or cleaned files.
