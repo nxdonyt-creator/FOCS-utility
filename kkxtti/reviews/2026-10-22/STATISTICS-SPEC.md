@@ -26,7 +26,7 @@ PresentMon documentation defines different clocks and stages. Brief mapping:
 | DisplayedTime / FrameType / display identifiers | Keep for dropped/generated/display-layer classification |
 | PC/input-latency fields | Display the documented measurement boundaries and availability |
 
-Source: [PresentMon console documentation](https://github.com/GameTechDev/PresentMon/blob/main/README-ConsoleApplication.md), accessed 2026-10-22. This moving document is a discovery source; implementation must freeze the corresponding tag/source. [PresentMon 2.6.0 release](https://github.com/GameTechDev/PresentMon/releases/tag/v2.6.0), published 2026-09-21, adds display attribution and capability reporting. Console output and the service/overlay interfaces are separate contracts; their switches are not interchangeable.
+Source: [PresentMon console documentation](https://github.com/GameTechDev/PresentMon/blob/v2.6.0/README-ConsoleApplication.md), accessed 2026-10-22. The v2.6.0 tag and exact column names were also checked; implementation must retain this producer-version binding. [PresentMon 2.6.0 release](https://github.com/GameTechDev/PresentMon/releases/tag/v2.6.0), published 2026-09-21, adds display attribution and capability reporting. Console output and the service/overlay interfaces are separate contracts; their switches are not interchangeable.
 
 Store application, PID, swap-chain, adapter/display identity, frame class, present mode and all raw timestamp fields. Never silently pool swap chains, launchers, displays, game restarts or generated and application frames. A user can select a group; comparisons must use equivalent groups.
 
