@@ -59,6 +59,17 @@
     "notes": {
       "type": "string",
       "maxLength": 4096
+    },
+    "machineFingerprint": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [
@@ -68,6 +79,33 @@
     "catalogSha256",
     "controls",
     "machineBinding",
-    "notes"
+    "notes",
+    "machineFingerprint"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "machineBinding": {
+            "const": "this-device"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "machineFingerprint": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "machineFingerprint": {
+            "type": "null"
+          }
+        }
+      }
+    }
   ]
 }

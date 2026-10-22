@@ -395,20 +395,15 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 4096
-            },
-            "fileId": {
-              "type": "string",
-              "minLength": 1,
-              "maxLength": 4096
             }
           },
           "required": [
             "kind",
             "rootId",
             "relativePath",
-            "volumeId",
-            "fileId"
-          ]
+            "volumeId"
+          ],
+          "description": "Logical file target. Before/target/observed snapshots must carry content hashes and observed file identities separately because atomic replacement changes the file ID."
         },
         {
           "type": "object",

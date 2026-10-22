@@ -80,3 +80,7 @@ Profile-as-code exports stable control IDs, operation versions, desired on/off, 
 | Journal v2 | Exact narrow resource recovery where state is known | Cannot reverse deletion, guarantee outside writers cooperate, or defeat an administrator |
 
 The table is a recovery-design comparison, not a guarantee for a particular Windows restore configuration. Include operation-specific recovery instructions and explicit irreversible side effects in every review dialog.
+
+## Additional identity rules for schema consumers
+
+A profile with machineBinding=this-device requires its machineFingerprint to match the trusted local installation/machine context; portable-preferences requires null. This is an accident-prevention binding, not authorization. File resources identify an approved logical root/path and volume; Before and observed-after snapshots separately store file IDs and content hashes. Atomic replacement can change the file ID, so Undo must compare against the applied identity rather than demand the original pre-replacement ID. Provider-specific snapshot validation is mandatory.
